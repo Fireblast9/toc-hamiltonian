@@ -52,7 +52,11 @@ def getVarNumber(**kwargs):
 
 def getVarName(**kwargs):
     ##+ Insert here the code to define a variable name based on your application-specific parameters
-    pass
+    
+    v = kwargs['vertex']
+    p = kwargs['position']
+
+    return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
     # example:
     # idx = kwargs['idx']
