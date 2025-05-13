@@ -64,7 +64,13 @@ def getVarName(**kwargs):
 
 def genVarNames(**kwargs):
     ##+ Insert here the code to generate the variable names
-    pass
+    # variables X_{v,p} for each vertex v and position p of Hamiltonian path
+    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    
+    for v in vertices:
+        for posision_index in range(len(vertices)):
+            name = getVarName(vertex=v, position=posision_index)
+            addVarName(name)
 
     # example:
     # count = kwargs['count']
