@@ -15,8 +15,6 @@ import re
 import random
 import os
 import shutil
-# To check how long the execution took
-import time
 
 gVarNumberToName = ["invalid"]
 gVarNameToNumber = {}
@@ -54,11 +52,9 @@ def getVarNumber(**kwargs):
 
 def getVarName(**kwargs):
     ##+ Insert here the code to define a variable name based on your application-specific parameters
-
-    v = kwargs['vertex']
-    p = kwargs['position']
-
-    return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
+    c = kwargs['cities']
+    #
+    p = kwargs['positions']
 
     # example:
     # idx = kwargs['idx']
@@ -66,13 +62,7 @@ def getVarName(**kwargs):
 
 def genVarNames(**kwargs):
     ##+ Insert here the code to generate the variable names
-    # variables X_{v,p} for each vertex v and position p of Hamiltonian path
-    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
-
-    for v in vertices:
-        for posision_index in range(len(vertices)):
-            name = getVarName(vertex=v, position=posision_index)
-            addVarName(name)
+    pass
 
     # example:
     # count = kwargs['count']
@@ -92,49 +82,6 @@ def genClauses(**kwargs):
     #     for j in closed_range(i+1, count):
     #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
     ##+ End of code insertion
-
-    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
-    edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
-    positions = vertices # number of positions in the path
-
-    # define the neighbors matrix
-    # neighbors[i][j] = True if there is an edge between vertex i and j
-    neighbors = [[False] * len(vertices) for _ in range(len(vertices))]
-    for i in range(len(vertices)):
-        for j in range(len(vertices)):
-            #neighbors[i][j] = False
-            if (i,j) in edges:
-                neighbors[i][j] = True
-                neighbors[j][i] = True
-
-    # 1. Every vertex must be in at least one position in the path
-    for v in vertices:
-        clauses.append([getVarNumber(vertex=v, position=p) for p in positions])
-
-    # 2. Every position in the path must have at least one vertex
-    for p in positions:
-        clauses.append([getVarNumber(vertex=v, position=p) for v in vertices])
-
-    # 3. Every position in the path must have at most one vertex
-    for p in positions:
-        for v1 in vertices:
-            for v2 in vertices:
-                if v1 != v2:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
-
-    # 4. Every vertex must be in at most one position in the path
-    for v in vertices:
-        for p1 in positions:
-            for p2 in positions:
-                if p1 != p2:
-                    clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
-
-    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
-    for p in range(len(positions) - 1):
-        for v1 in vertices:
-            for v2 in vertices:
-                if v1 != v2 and not neighbors[v1][v2]:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
 
     return clauses
 
@@ -195,58 +142,13 @@ if __name__ == '__main__':
 
     kwargs = {}
 
-    with open('graph1.txt', 'r') as file:
-        # strip() removes whiteline characters and end of line at the beginning and end of the string
-        first_line = file.readline().strip().split()
-        n_vertices = int(first_line[0])
-        n_edges = int(first_line[1])
-
-        vertices = []
-        edges = []
-        for i in range (n_vertices):
-            # First vertex is '0'
-            vertices.append(i)
-
-        for _ in range(n_edges):
-            line = file.readline().strip().split()
-            v1 = int(line[0])
-            v2 = int(line[1])
-            edges.append((v1,v2))
-
-    print(f"Number of vertices: {n_vertices}")
-    print(f"Number of edges: {n_edges}")
-    print(f"Edges: {edges}")
-
-    kwargs['vertices'] = vertices
-    kwargs['edges'] = edges
-
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
-
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
-
     ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
     # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
     # if len(sys.argv) != 2:
     #     print("Usage: %s <count>" % sys.argv[0])
     #     sys.exit(1)
+
     # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-        ##+ End of code insertion
     ##+ End of code insertion
 
     genVarNames(**kwargs)
@@ -261,14 +163,6 @@ if __name__ == '__main__':
     fl.close()
 
     # Run the SATsolver
-    # Start recording the time
-    start = time.time()
-    # Use with linux
-    #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
-    # Use with windows
-    solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
+    solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     res = solverOutput.decode('utf-8')
-    end = time.time()
-    time = end - start
     printResult(res)
-    print(f"It took {time:.4f} seconds to run the SAT solver.")
