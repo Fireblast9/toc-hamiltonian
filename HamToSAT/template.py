@@ -91,6 +91,49 @@ def genClauses(**kwargs):
     #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
     ##+ End of code insertion
 
+    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
+    positions = vertices # number of positions in the path
+    
+    # define the neighbors matrix
+    # neighbors[i][j] = True if there is an edge between vertex i and j
+    neighbors = [[False] * len(vertices) for _ in range(len(vertices))]
+    for i in range(len(vertices)):
+        for j in range(len(vertices)):
+            #neighbors[i][j] = False
+            if (i,j) in edges:
+                neighbors[i][j] = True
+                neighbors[j][i] = True
+    
+    # 1. Every vertex must be in at least one position in the path
+    for v in vertices:
+        clauses.append([getVarNumber(vertex=v, position=p) for p in positions])
+
+    # 2. Every position in the path must have at least one vertex
+    for p in positions:
+        clauses.append([getVarNumber(vertex=v, position=p) for v in vertices])
+
+    # 3. Every position in the path must have at most one vertex
+    for p in positions:
+        for v1 in vertices:
+            for v2 in vertices:
+                if v1 != v2:
+                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
+
+    # 4. Every vertex must be in at most one position in the path
+    for v in vertices:
+        for p1 in positions:
+            for p2 in positions:
+                if p1 != p2:
+                    clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
+
+    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
+    for p in range(len(positions) - 1):
+        for v1 in vertices:
+            for v2 in vertices:
+                if v1 != v2 and not neighbors[v1][v2]:
+                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+
     return clauses
 
 ## A helper function to print the cnf header (do not modify)
@@ -149,6 +192,16 @@ if __name__ == '__main__':
         sys.exit(1)
 
     kwargs = {}
+
+    #unsatisfiable:
+    kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
+    kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
+
+    #satisfiable:
+    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
+    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
+
+
 
     ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
     # example:
