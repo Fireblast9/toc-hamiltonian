@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
     kwargs = {}
 
-    with open('graph1.txt', 'r') as file:
+    with open('graph0.txt', 'r') as file:
         # strip() removes whiteline characters and end of line at the beginning and end of the string
         first_line = file.readline().strip().split()
         n_vertices = int(first_line[0])
@@ -248,7 +248,8 @@ if __name__ == '__main__':
     #     sys.exit(1)
         ##+ End of code insertion
     ##+ End of code insertion
-
+    # Start recording the time
+    start = time.time()
     genVarNames(**kwargs)
     clauses = genClauses(**kwargs)
 
@@ -261,14 +262,12 @@ if __name__ == '__main__':
     fl.close()
 
     # Run the SATsolver
-    # Start recording the time
-    start = time.time()
     # Use with linux
     #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     # Use with windows
     solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
     res = solverOutput.decode('utf-8')
     end = time.time()
-    time = end - start
+    total_time = end - start
     printResult(res)
-    print(f"It took {time:.4f} seconds to run the SAT solver.")
+    print(f"It took {total_time:.4f} seconds to run the SAT solver.")
