@@ -1,87 +1,54 @@
-# Welcome to React Router!
+![](https://github.com/xyflow/web/blob/main/assets/codesandbox-header-ts.png?raw=true)
 
-A modern, production-ready template for building full-stack React applications using React Router.
+# React Flow starter (Vite + TS)
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+We've put together this template to serve as a starting point for folks
+interested in React Flow. You can use this both as a base for your own React
+Flow applications, or for small experiments or bug reports.
 
-## Features
+**TypeScript not your thing?** We also have a vanilla JavaScript starter template,
+just for you!
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+## Getting up and running
 
-## Getting Started
-
-### Installation
-
-Install the dependencies:
+You can get this template without forking/cloning the repo using `degit`:
 
 ```bash
-npm install
+npx degit xyflow/vite-react-flow-template your-app-name
 ```
 
-### Development
+The template contains mostly the minimum dependencies to get up and running, but
+also includes eslint and some additional rules to help you write React code that
+is less likely to run into issues:
 
-Start the development server with HMR:
+```bash
+npm install # or `pnpm install` or `yarn install`
+```
+
+Vite is a great development server and build tool that we recommend our users to
+use. You can start a development server with:
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+While the development server is running, changes you make to the code will be
+automatically reflected in the browser!
 
-## Building for Production
+## Things to try:
 
-Create a production build:
+- Create a new custom node inside `src/nodes/` (don't forget to export it from `src/nodes/index.ts`).
+- Change how things look by [overriding some of the built-in classes](https://reactflow.dev/learn/customization/theming#overriding-built-in-classes).
+- Add a layouting library to [position your nodes automatically](https://reactflow.dev/learn/layouting/layouting)
 
-```bash
-npm run build
-```
+## Resources
 
-## Deployment
+Links:
 
-### Docker Deployment
+- [React Flow - Docs](https://reactflow.dev)
+- [React Flow - Discord](https://discord.com/invite/Bqt6xrs)
 
-To build and run using Docker:
+Learn:
 
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+- [React Flow – Custom Nodes](https://reactflow.dev/learn/customization/custom-nodes)
+- [React Flow – Layouting](https://reactflow.dev/learn/layouting/layouting)
