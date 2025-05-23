@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
     kwargs = {}
 
-    with open('graph1.txt', 'r') as file:
+    with open('graph5.txt', 'r') as file:
         # strip() removes whiteline characters and end of line at the beginning and end of the string
         first_line = file.readline().strip().split()
         n_vertices = int(first_line[0])
@@ -261,10 +261,6 @@ if __name__ == '__main__':
             v1 = int(line[0])
             v2 = int(line[1])
             edges.append((v1,v2))
-
-    print(f"Number of vertices: {n_vertices}")
-    print(f"Number of edges: {n_edges}")
-    print(f"Edges: {edges}")
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
@@ -319,5 +315,8 @@ if __name__ == '__main__':
     end = time.time()
     total_time = end - start
     printResult(res)
+    print(f"Number of vertices: {n_vertices}")
+    print(f"Number of edges: {n_edges}")
+    print(f"Edges: {edges}")
     printHamPath(res, n_vertices, n_edges)
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
