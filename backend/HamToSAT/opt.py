@@ -108,34 +108,50 @@ def genClauses(**kwargs):
                 neighbors[i][j] = True
                 neighbors[j][i] = True
 
-    # 1. Every vertex must be in at least one position in the path
     for v in vertices:
+        # 1. Every vertex must be in at least one position in the path
         clauses.append([getVarNumber(vertex=v, position=p) for p in positions])
 
-    # 2. Every position in the path must have at least one vertex
-    for p in positions:
-        clauses.append([getVarNumber(vertex=v, position=p) for v in vertices])
-
-    # 3. Every position in the path must have at most one vertex
-    for p in positions:
-        for v1 in vertices:
-            for v2 in vertices:
-                if v1 != v2:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
-
-    # 4. Every vertex must be in at most one position in the path
-    for v in vertices:
+        # 4. Every vertex must be in at most one position in the path
         for p1 in positions:
-            for p2 in positions:
+            for p2 in range(p1 + 1, len(positions)): # start from p1 + 1 to avoid duplicates (-p1 or -p2 equal_to -p2 or -p1)
                 if p1 != p2:
                     clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
 
-    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
-    for p in range(len(positions) - 1):
+    for p in positions:
+        # 2. Every position in the path must have at least one vertex
+        clauses.append([getVarNumber(vertex=v, position=p) for v in vertices])
+
+        # 3. Every position in the path must have at most one vertex
         for v1 in vertices:
-            for v2 in vertices:
-                if v1 != v2 and not neighbors[v1][v2]:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+            for v2 in range(v1 + 1, len(vertices)): # start from v1 + 1 to avoid duplicates (-v1 or -v2 equal_to -v2 or -v1)
+                if v1 != v2:
+                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
+
+                    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions  
+                    if not neighbors[v1][v2] and p < len(positions) - 1:
+                        clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+
+    # # 3. Every position in the path must have at most one vertex
+    # for p in positions:
+    #     for v1 in vertices:
+    #         for v2 in range(v1 + 1, len(vertices)): # start from v1 + 1 to avoid duplicates
+    #             if v1 != v2:
+    #                 clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
+
+    # # 4. Every vertex must be in at most one position in the path
+    # for v in vertices:
+    #     for p1 in positions:
+    #         for p2 in range(p1 + 1, len(positions)): # start from p1 + 1 to avoid duplicates
+    #             if p1 != p2:
+    #                 clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
+
+    # # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
+    # for p in range(len(positions) - 1):
+    #     for v1 in vertices:
+    #         for v2 in vertices:
+    #             if v1 != v2 and not neighbors[v1][v2]:
+    #                 clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
 
     return clauses
 
