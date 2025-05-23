@@ -61,10 +61,6 @@ def getVarName(**kwargs):
 
     return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
-    # example:
-    # idx = kwargs['idx']
-    # return "myVar(%d)" % (idx)
-
 def genVarNames(**kwargs):
     ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
@@ -75,28 +71,13 @@ def genVarNames(**kwargs):
             name = getVarName(vertex=v, position=posision_index)
             addVarName(name)
 
-    # example:
-    # count = kwargs['count']
-    # for i in closed_range(1, count):
-    #     name = getVarName(idx=i)
-    #     addVarName(name)
-
 def genClauses(**kwargs):
     clauses = []
-
     ##+ Insert here the code to add constraints in the form of clauses
-    # example:
-    # count = kwargs['count']
-    # ## exactly one of our variables must be true:
-    # clauses.append([getVarNumber(idx=i) for i in closed_range(1, count)])
-    # for i in closed_range(1, count):
-    #     for j in closed_range(i+1, count):
-    #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
-    ##+ End of code insertion
 
     vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
     edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
-    positions = vertices # number of positions in the path
+    positions = vertices # list of positions in the path
 
     # define the neighbors matrix
     # neighbors[i][j] = True if there is an edge between vertex i and j
@@ -131,27 +112,6 @@ def genClauses(**kwargs):
                     # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions  
                     if not neighbors[v1][v2] and p < len(positions) - 1:
                         clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
-
-    # # 3. Every position in the path must have at most one vertex
-    # for p in positions:
-    #     for v1 in vertices:
-    #         for v2 in range(v1 + 1, len(vertices)): # start from v1 + 1 to avoid duplicates
-    #             if v1 != v2:
-    #                 clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
-
-    # # 4. Every vertex must be in at most one position in the path
-    # for v in vertices:
-    #     for p1 in positions:
-    #         for p2 in range(p1 + 1, len(positions)): # start from p1 + 1 to avoid duplicates
-    #             if p1 != p2:
-    #                 clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
-
-    # # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
-    # for p in range(len(positions) - 1):
-    #     for v1 in vertices:
-    #         for v2 in vertices:
-    #             if v1 != v2 and not neighbors[v1][v2]:
-    #                 clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
 
     return clauses
 
@@ -285,34 +245,6 @@ def HamSAT(input_graph_string):
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
-
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
-
-    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
-    # if len(sys.argv) != 2:
-    #     print("Usage: %s <count>" % sys.argv[0])
-    #     sys.exit(1)
-    # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-        ##+ End of code insertion
-    ##+ End of code insertion
     # Start recording the time
     start = time.time()
     genVarNames(**kwargs)
@@ -389,34 +321,6 @@ if __name__ == '__main__':
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
-
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
-
-    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
-    # if len(sys.argv) != 2:
-    #     print("Usage: %s <count>" % sys.argv[0])
-    #     sys.exit(1)
-    # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-        ##+ End of code insertion
-    ##+ End of code insertion
     # Start recording the time
     start = time.time()
     genVarNames(**kwargs)
