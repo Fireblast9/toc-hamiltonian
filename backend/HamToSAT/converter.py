@@ -1,45 +1,47 @@
 #!/usr/bin/env python3
 
 ## Default executable of a SAT solver (do not change this)
-defSATsolver="z3"
+defSATsolver = "z3"
 
 ## Change this to an executable SAT solver if z3 is not in your PATH or else
 ## Example (Linux): SATsolver="/home/user/z3-4.13/bin/z3"
 ## You can also include command-line options if necessary
-SATsolver=defSATsolver
+SATsolver = defSATsolver
 
-import sys
-from subprocess import Popen
-from subprocess import PIPE
-import re
-import random
 import os
+import random
+import re
 import shutil
-from io import StringIO # To treat a string like a file
+import sys
 # To check how long the execution took
 import time
+from io import StringIO  # To treat a string like a file
+from subprocess import PIPE, Popen
 
-gVarNumberToName = ["invalid"]
-gVarNameToNumber = {}
 
 def closed_range(start, stop, step=1):
     dir = 1 if (step > 0) else -1
     return range(start, stop + dir, step)
 
+
 def varCount():
     global gVarNumberToName
     return len(gVarNumberToName) - 1
 
+
 def allVarNumbers():
     return closed_range(1, varCount())
+
 
 def varNumberToName(num):
     global gVarNumberToName
     return gVarNumberToName[num]
 
+
 def varNameToNumber(name):
     global gVarNameToNumber
     return gVarNameToNumber[name]
+
 
 def addVarName(name):
     global gVarNumberToName
@@ -47,11 +49,14 @@ def addVarName(name):
     gVarNumberToName.append(name)
     gVarNameToNumber[name] = varCount()
 
+
 # def printClause(clause):
 #     print(map(lambda x: "%s%s" % (x < 0 and eval("'-'") or eval ("''"), varNumberToName(abs(x))) , clause))
 
+
 def getVarNumber(**kwargs):
     return varNameToNumber(getVarName(**kwargs))
+
 
 def getVarName(**kwargs):
     ##+ Insert here the code to define a variable name based on your application-specific parameters
@@ -59,16 +64,20 @@ def getVarName(**kwargs):
     v = kwargs['vertex']
     p = kwargs['position']
 
-    return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
+    return "x_%s_%s" % (
+        str(v), str(p)
+    )  # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
     # example:
     # idx = kwargs['idx']
     # return "myVar(%d)" % (idx)
 
+
 def genVarNames(**kwargs):
     ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
-    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    vertices = kwargs[
+        'vertices']  # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
 
     for v in vertices:
         for posision_index in range(len(vertices)):
@@ -80,6 +89,7 @@ def genVarNames(**kwargs):
     # for i in closed_range(1, count):
     #     name = getVarName(idx=i)
     #     addVarName(name)
+
 
 def genClauses(**kwargs):
     clauses = []
@@ -94,9 +104,11 @@ def genClauses(**kwargs):
     #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
     ##+ End of code insertion
 
-    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
-    edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
-    positions = vertices # number of positions in the path
+    vertices = kwargs[
+        'vertices']  # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    edges = kwargs[
+        'edges']  # list of edges. !!!Asuming they are tuples of vertex IDs!!!
+    positions = vertices  # number of positions in the path
 
     # define the neighbors matrix
     # neighbors[i][j] = True if there is an edge between vertex i and j
@@ -104,7 +116,7 @@ def genClauses(**kwargs):
     for i in range(len(vertices)):
         for j in range(len(vertices)):
             #neighbors[i][j] = False
-            if (i,j) in edges:
+            if (i, j) in edges:
                 neighbors[i][j] = True
                 neighbors[j][i] = True
 
@@ -121,23 +133,33 @@ def genClauses(**kwargs):
         for v1 in vertices:
             for v2 in vertices:
                 if v1 != v2:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
+                    clauses.append([
+                        -getVarNumber(vertex=v1, position=p),
+                        -getVarNumber(vertex=v2, position=p)
+                    ])
 
     # 4. Every vertex must be in at most one position in the path
     for v in vertices:
         for p1 in positions:
             for p2 in positions:
                 if p1 != p2:
-                    clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
+                    clauses.append([
+                        -getVarNumber(vertex=v, position=p1),
+                        -getVarNumber(vertex=v, position=p2)
+                    ])
 
     # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
     for p in range(len(positions) - 1):
         for v1 in vertices:
             for v2 in vertices:
                 if v1 != v2 and not neighbors[v1][v2]:
-                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+                    clauses.append([
+                        -getVarNumber(vertex=v1, position=p),
+                        -getVarNumber(vertex=v2, position=p + 1)
+                    ])
 
     return clauses
+
 
 ## A helper function to print the cnf header (do not modify)
 def getDimacsHeader(clauses):
@@ -150,15 +172,19 @@ def getDimacsHeader(clauses):
     for cl in clauses:
         print("c ", end='')
         for l in cl:
-            print(("!" if (l < 0) else " ") + varNumberToName(abs(l)), "", end='')
+            print(("!" if (l < 0) else " ") + varNumberToName(abs(l)),
+                  "",
+                  end='')
         print("")
     print("")
     str += "p cnf %d %d" % (cnt, n)
     return str
 
+
 ## A helper function to print a set of clauses in CNF (do not modify)
 def toDimacsCnf(clauses):
     return "\n".join(map(lambda x: "%s 0" % " ".join(map(str, x)), clauses))
+
 
 ## A helper function to print only the satisfied variables in human-readable format (do not modify)
 def printResult(res):
@@ -177,12 +203,14 @@ def printResult(res):
     # The last element in asgn is the trailing zero and we can ignore it
 
     # Convert the solution to our names
-    facts = map(lambda x: varNumberToName(abs(x)), filter(lambda x: x > 0, asgn))
+    facts = map(lambda x: varNumberToName(abs(x)),
+                filter(lambda x: x > 0, asgn))
 
     # Print the solution
     print("c SOLUTION:")
     for f in facts:
         print("c", f)
+
 
 def printHamPath(res, n_vertices):
     res = res.strip().split('\n')
@@ -213,7 +241,7 @@ def printHamPath(res, n_vertices):
 
     # Iterate over the variable numbers and assign them to the path
     for var in variable_number:
-        counter += 1 # count the number of true variables
+        counter += 1  # count the number of true variables
         v_idx = var // n_vertices
         p_idx = var % n_vertices
         if path[p_idx] == default_value:
@@ -221,12 +249,16 @@ def printHamPath(res, n_vertices):
             path[p_idx] = v_idx
         else:
             # If the position is already assigned, something went wrong
-            print("Error: multiple vertices assigned to the same position in the path.")
+            print(
+                "Error: multiple vertices assigned to the same position in the path."
+            )
             return
 
     # check that the number of true variables is equal to the number of vertices
     if counter != n_vertices:
-        print("Error: number of true variables is not equal to the number of vertices.")
+        print(
+            "Error: number of true variables is not equal to the number of vertices."
+        )
         return
 
     # Print the Hamiltonian Path
@@ -234,13 +266,20 @@ def printHamPath(res, n_vertices):
     print(path)
     return path
 
+
 #-------------------------This function is almost the same as main() but it returns the Hamiltonian path for backend------------------
 def HamSAT(input_graph_string):
+
+    global gVarNumberToName, gVarNameToNumber
+    gVarNumberToName = ["invalid"]
+    gVarNameToNumber = {}
     """ Main function to run the SAT solver """
     path = shutil.which(SATsolver.split()[0])
     if path is None:
         if SATsolver == defSATsolver:
-            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
+            print(
+                "Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)"
+                % sys.argv[0])
         else:
             print("Path '%s' does not exist or is not executable." % SATsolver)
         sys.exit(1)
@@ -248,14 +287,15 @@ def HamSAT(input_graph_string):
     kwargs = {}
 
     # read the input graph
-    graph_as_file = StringIO(input_graph_string) # treat the string as a file
-    first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
+    graph_as_file = StringIO(input_graph_string)  # treat the string as a file
+    first_line = graph_as_file.readline().strip().split(
+    )  # strip() removes whiteline characters and end of line at the beginning and end of the string
     n_vertices = int(first_line[0])
     n_edges = int(first_line[1])
 
     vertices = []
     edges = []
-    for i in range (n_vertices):
+    for i in range(n_vertices):
         # First vertex is '0'
         vertices.append(i)
 
@@ -263,8 +303,7 @@ def HamSAT(input_graph_string):
         line = graph_as_file.readline().strip().split()
         v1 = int(line[0])
         v2 = int(line[1])
-        edges.append((v1,v2))
-
+        edges.append((v1, v2))
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
@@ -276,8 +315,6 @@ def HamSAT(input_graph_string):
     #satisfiable:
     # kwargs['vertices'] = [0, 1, 2] # Example vertices.
     # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
 
     ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
     # example:
@@ -295,7 +332,7 @@ def HamSAT(input_graph_string):
     #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
     #         + " (vertex 3, vertex 1)")
     #     sys.exit(1)
-        ##+ End of code insertion
+    ##+ End of code insertion
     ##+ End of code insertion
     # Start recording the time
     start = time.time()
@@ -314,7 +351,8 @@ def HamSAT(input_graph_string):
     # Use with linux
     #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     # Use with windows
-    solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
+    solverOutput = Popen([SATsolver, "tmp_prob.cnf"],
+                         stdout=PIPE).communicate()[0]
 
     res = solverOutput.decode('utf-8')
     end = time.time()
@@ -329,16 +367,18 @@ def HamSAT(input_graph_string):
     hamiltonian_path = printHamPath(res, n_vertices)
 
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
-    
+
     return hamiltonian_path
+
+
 #-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
-
-
 
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
 
-    example_input = "4 5\n0 1\n1 2\n2 3\n3 0\n0 2\n"
+    # replace this with the input you want to test
+    # example_input = "4 3\n0 1\n1 2\n2 3"
+    example_input = "5 4\n0 1\n1 2\n2 3\n3 4"
 
     HamSAT(example_input)
 
@@ -380,8 +420,6 @@ if __name__ == '__main__':
     # #satisfiable:
     # # kwargs['vertices'] = [0, 1, 2] # Example vertices.
     # # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
 
     # ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
     # # example:

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from HamToSAT.optimization_attempt import varCount
+from HamToSAT.converter import HamSAT
 
 app = FastAPI()
 
@@ -26,4 +26,4 @@ async def read_root():
 @app.get("/solve/{path}")
 async def read_item(path: str):
     print(path)
-    return str(varCount())
+    return HamSAT(path)

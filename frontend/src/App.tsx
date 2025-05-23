@@ -14,10 +14,11 @@ export default function App() {
       throw new Error("Network response was not ok");
     }
     const res = await response.json();
-    if (res.startsWith("-1")) {
+    if (!res) {
       setOutput("No solution found");
     } else {
-      setOutput(res);
+      setOutput("");
+      console.log(res);
     }
   }
   function handleFile(files: FileList | null) {
