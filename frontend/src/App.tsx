@@ -1,18 +1,24 @@
 import { useState } from "react";
+import Graph from "./Graph";
 
 export default function App() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
 
   async function fetchOutput() {
-    const response = await fetch(`http://localhost:8000/solve/${input}`);
+    const response = await fetch(
+      `http://localhost:8000/solve/${encodeURIComponent(input)}`
+    );
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
-    setOutput(await response.json());
+    const res = await response.json();
+    if (res === "false") {
+      setOutput("No solution found");
+    } else {
+      setOutput(res);
+    }
   }
-
-  console.log("input: ", input);
 
   return (
     <div className="App">
@@ -28,6 +34,7 @@ export default function App() {
       </button>
 
       <p>{output}</p>
+      <Graph />
     </div>
   );
 }

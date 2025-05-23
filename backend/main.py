@@ -20,3 +20,9 @@ app.add_middleware(
 @app.get("/")
 async def read_root():
     return {"Hello, world!"}
+
+
+@app.get("/solve/{path}")
+async def read_item(path: str):
+    print(path)
+    return "success"
