@@ -183,6 +183,36 @@ def printResult(res):
     for f in facts:
         print("c", f)
 
+def printHamPath(res, n_vertices, n_edges):
+    res = res.strip().split('\n')
+
+    # If it was satisfiable, we want to have the assignment printed out
+    if res[0] != "s SATISFIABLE":
+        return
+    # First get the assignment, which is on the second line of the file, and split it on spaces
+    # Read the solution
+    asgn = map(int, res[1].split()[1:])
+    # Then get the variables that are positive, and get their names.
+    # This way we know that everything not printed is false.
+    # The last element in asgn is the trailing zero and we can ignore it
+
+    # get the variable number of the true variables and convert to 0-based index
+    variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
+
+    # Initialize a list to store the path
+    default_value = -1
+    path = [default_value for _ in range(n_vertices)]
+
+    # Iterate over the variable numbers and assign them to the path
+    for var in variable_number:
+        v_idx = var // n_vertices
+        p_idx = var % n_vertices
+        path[p_idx] = v_idx
+
+    # Print the Hamiltonian Path
+    print("c HAMILTONIAN PATH:")
+    print(path)
+
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
     path = shutil.which(SATsolver.split()[0])
@@ -195,7 +225,7 @@ if __name__ == '__main__':
 
     kwargs = {}
 
-    with open('graph0.txt', 'r') as file:
+    with open('graph1.txt', 'r') as file:
         # strip() removes whiteline characters and end of line at the beginning and end of the string
         first_line = file.readline().strip().split()
         n_vertices = int(first_line[0])
@@ -270,4 +300,5 @@ if __name__ == '__main__':
     end = time.time()
     total_time = end - start
     printResult(res)
+    printHamPath(res, n_vertices, n_edges)
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
