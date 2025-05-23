@@ -315,16 +315,21 @@ def HamSAT(input_graph_string):
     #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     # Use with windows
     solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
+
     res = solverOutput.decode('utf-8')
     end = time.time()
     total_time = end - start
-    printResult(res)
-    print(f"Number of vertices: {n_vertices}")
-    print(f"Number of edges: {n_edges}")
-    print(f"Edges: {edges}")
+
+    # printResult(res)
+    # print(f"Number of vertices: {n_vertices}")
+    # print(f"Number of edges: {n_edges}")
+    # print(f"Edges: {edges}")
+
     hamiltonian_path = [-1 for _ in range(n_vertices)]
     hamiltonian_path = printHamPath(res, n_vertices)
+
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    
     return hamiltonian_path
 #-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
 
