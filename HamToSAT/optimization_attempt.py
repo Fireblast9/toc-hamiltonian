@@ -177,7 +177,7 @@ def printResult(res):
     for f in facts:
         print("c", f)
 
-def printHamPath(res, n_vertices, n_edges):
+def printHamPath(res, n_vertices):
     res = res.strip().split('\n')
 
     # If it was satisfiable, we want to have the assignment printed out
@@ -225,6 +225,101 @@ def printHamPath(res, n_vertices, n_edges):
     # Print the Hamiltonian Path
     print("c HAMILTONIAN PATH:")
     print(path)
+    return path
+
+#-------------------------This function is almost the same as main() but it returns the Hamiltonian path for backend------------------
+def HamSAT():
+    """ Main function to run the SAT solver """
+    path = shutil.which(SATsolver.split()[0])
+    if path is None:
+        if SATsolver == defSATsolver:
+            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
+        else:
+            print("Path '%s' does not exist or is not executable." % SATsolver)
+        sys.exit(1)
+
+    kwargs = {}
+
+    with open('graph5.txt', 'r') as file:
+        # strip() removes whiteline characters and end of line at the beginning and end of the string
+        first_line = file.readline().strip().split()
+        n_vertices = int(first_line[0])
+        n_edges = int(first_line[1])
+
+        vertices = []
+        edges = []
+        for i in range (n_vertices):
+            # First vertex is '0'
+            vertices.append(i)
+
+        for _ in range(n_edges):
+            line = file.readline().strip().split()
+            v1 = int(line[0])
+            v2 = int(line[1])
+            edges.append((v1,v2))
+
+
+    kwargs['vertices'] = vertices
+    kwargs['edges'] = edges
+
+    #unsatisfiable:
+    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
+    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
+
+    #satisfiable:
+    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
+    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
+
+
+
+    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
+    # example:
+    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
+    #
+
+    # if len(sys.argv) != 2:
+    #     print("Usage: %s <count>" % sys.argv[0])
+    #     sys.exit(1)
+    # kwargs['count'] = int(sys.argv[1])
+    # if len(sys.argv) == 1:
+    #     print(
+    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
+    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
+    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
+    #         + " (vertex 3, vertex 1)")
+    #     sys.exit(1)
+        ##+ End of code insertion
+    ##+ End of code insertion
+    # Start recording the time
+    start = time.time()
+    genVarNames(**kwargs)
+    clauses = genClauses(**kwargs)
+
+    head = getDimacsHeader(clauses)
+    cnf = toDimacsCnf(clauses)
+
+    # Here we create a temporary cnf file for SATsolver
+    fl = open("tmp_prob.cnf", "w")
+    fl.write("\n".join([head, cnf]) + "\n")
+    fl.close()
+
+    # Run the SATsolver
+    # Use with linux
+    #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
+    # Use with windows
+    solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
+    res = solverOutput.decode('utf-8')
+    end = time.time()
+    total_time = end - start
+    printResult(res)
+    print(f"Number of vertices: {n_vertices}")
+    print(f"Number of edges: {n_edges}")
+    print(f"Edges: {edges}")
+    hamiltonian_path = [-1 for _ in range(n_vertices)]
+    hamiltonian_path = printHamPath(res, n_vertices)
+    print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    return hamiltonian_path
+#-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
 
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
@@ -313,5 +408,5 @@ if __name__ == '__main__':
     print(f"Number of vertices: {n_vertices}")
     print(f"Number of edges: {n_edges}")
     print(f"Edges: {edges}")
-    printHamPath(res, n_vertices, n_edges)
+    printHamPath(res, n_vertices)
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
