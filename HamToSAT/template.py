@@ -199,15 +199,34 @@ def printHamPath(res, n_vertices, n_edges):
     # get the variable number of the true variables and convert to 0-based index
     variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
 
+    # check that the number of true variables is equal to the number of vertices
+    # if len(variable_number) != n_vertices:
+    #     print("Error: number of true variables is not equal to the number of vertices.")
+    #     return
+
     # Initialize a list to store the path
     default_value = -1
     path = [default_value for _ in range(n_vertices)]
 
+    counter = 0
+
     # Iterate over the variable numbers and assign them to the path
     for var in variable_number:
+        counter += 1 # count the number of true variables
         v_idx = var // n_vertices
         p_idx = var % n_vertices
-        path[p_idx] = v_idx
+        if path[p_idx] == default_value:
+            # If the position is not already assigned, assign the vertex to the path
+            path[p_idx] = v_idx
+        else:
+            # If the position is already assigned, something went wrong
+            print("Error: multiple vertices assigned to the same position in the path.")
+            return
+
+    # check that the number of true variables is equal to the number of vertices
+    if counter != n_vertices:
+        print("Error: number of true variables is not equal to the number of vertices.")
+        return
 
     # Print the Hamiltonian Path
     print("c HAMILTONIAN PATH:")
