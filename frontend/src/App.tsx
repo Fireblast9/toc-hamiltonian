@@ -1,6 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
 import Graph from "./Graph";
+import GuideModal from "./GuideModal";
 
 export default function App() {
   const [input, setInput] = useState("");
@@ -11,6 +12,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [animating, setAnimating] = useState(false);
   const isClearedRef = useRef(false);
+  const isManualEditRef = useRef(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -18,25 +21,109 @@ export default function App() {
     if (!input.trim()) {
       setNodes([]);
       setEdges([]);
-    } else {
-      const { nodes: parsedNodes, edges: parsedEdges } = parseGraphInput(input);
-      setNodes(parsedNodes);
-      setEdges(parsedEdges);
+      return;
     }
 
-    setOutput("");
+    const { nodes: parsedNodes, edges: parsedEdges } = parseGraphInput(
+      input,
+      nodes
+    );
+    setNodes(parsedNodes);
+    setEdges(parsedEdges);
   }, [input]);
+
+  function isInputValidEdgeCount(input: string): boolean {
+    const lines = input.trim().split("\n");
+    if (lines.length < 1) return false;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, edgeCountStr] = lines[0].split(" ");
+    const declaredEdgeCount = parseInt(edgeCountStr, 10);
+    const actualEdgeCount = lines.slice(1).filter((line) => line.trim()).length;
+
+    return declaredEdgeCount === actualEdgeCount;
+  }
+
+  function handleAddNode() {
+    if (!input.trim()) {
+      setInput("1 0");
+      return;
+    }
+
+    const lines = input.trim().split("\n");
+    const [nodeCountStr, edgeCountStr] = lines[0].split(" ");
+    const newNodeCount = parseInt(nodeCountStr, 10) + 1;
+
+    // Replace only the first line with updated node count
+    const newInput = [
+      `${newNodeCount} ${edgeCountStr}`,
+      ...lines.slice(1),
+    ].join("\n");
+    setInput(newInput);
+  }
+
+  function handleEdgeAdded(source: string, target: string) {
+    if (!input.trim()) {
+      setInput(`2 1\n${source} ${target}`);
+      return;
+    }
+
+    const lines = input.trim().split("\n");
+    let [nodeCount] = lines[0].split(" ").map(Number);
+
+    const edgeLines = lines.slice(1);
+    const edgeSet = new Set(
+      edgeLines.map((line) => {
+        const [a, b] = line.trim().split(" ");
+        return `${Math.min(+a, +b)}-${Math.max(+a, +b)}`;
+      })
+    );
+
+    const newEdgeId = `${Math.min(+source, +target)}-${Math.max(
+      +source,
+      +target
+    )}`;
+    if (edgeSet.has(newEdgeId)) {
+      // Prevent duplicate undirected edge
+      return;
+    }
+
+    const newEdge = `${source} ${target}`;
+    const updatedEdges = [...edgeLines, newEdge];
+    const newEdgeCount = updatedEdges.length;
+
+    nodeCount = Math.max(nodeCount, +source + 1, +target + 1);
+
+    const newInput = [`${nodeCount} ${newEdgeCount}`, ...updatedEdges].join(
+      "\n"
+    );
+    setInput(newInput);
+  }
+
+  function handleNodesUpdated(updatedNodes: Node[]) {
+    setNodes(updatedNodes); // Persist positions
+  }
 
   // fetch the output from the server
   async function fetchOutput() {
     isClearedRef.current = false;
     setLoading(true);
-    const response = await fetch(
-      `http://localhost:8000/solve/${encodeURIComponent(input)}`
-    );
+    let response: Response;
+
+    try {
+      response = await fetch(
+        `http://localhost:8000/solve/${encodeURIComponent(input)}`
+      );
+    } catch {
+      setOutput(
+        "There was an error connecting to the server. Please ensure the server is running."
+      );
+      setLoading(false);
+      return;
+    }
 
     if (!response.ok) {
-      setOutput("Request failed");
+      setOutput("Please input a valid graph");
       setLoading(false);
       return;
     }
@@ -102,38 +189,73 @@ export default function App() {
   // handle file upload
   function handleFile(files: FileList | null) {
     const file = files?.[0];
-    if (!file) {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith(".txt")) {
+      alert("Please upload a .txt file.");
       return;
     }
+
     const reader = new FileReader();
     reader.onload = (e) => {
-      setHasUploaded(true);
       const content = e.target?.result;
       if (typeof content === "string") {
+        setHasUploaded(true);
+        setOutput("");
+        setNodes([]);
+        setEdges([]);
+        isManualEditRef.current = false;
         setInput(content);
       }
     };
     reader.readAsText(file);
   }
 
-  function parseGraphInput(input: string) {
+  function parseGraphInput(
+    input: string,
+    existingNodes: Node[] = []
+  ): { nodes: Node[]; edges: Edge[] } {
     const lines = input.trim().split("\n");
-    const [nodeCount] = lines[0].split(" ").map(Number);
+    console.log(lines);
 
-    const nodes = Array.from({ length: nodeCount }, (_, i) => ({
-      id: i.toString(),
-      data: { label: `Node ${i}` },
-      position: { x: Math.random() * 500, y: Math.random() * 500 },
-    }));
+    if (lines.length === 0) return { nodes: [], edges: [] };
 
-    const edges = lines.slice(1).map((line, index) => {
-      const [source, target] = line.trim().split(" ");
-      return {
-        id: `${source}->${target}-${index}`,
-        source,
-        target,
-      };
+    const [nodeCountStr] = lines[0].split(" ");
+    const nodeCount = parseInt(nodeCountStr, 10);
+    const existingMap = new Map(existingNodes.map((n) => [n.id, n]));
+
+    const nodes = Array.from({ length: nodeCount }, (_, i) => {
+      const id = i.toString();
+      return (
+        existingMap.get(id) ?? {
+          id,
+          data: { label: `Node ${i}` },
+          position: { x: Math.random() * 500, y: Math.random() * 500 },
+        }
+      );
     });
+
+    const edges = lines
+      .slice(1)
+      .map((line) => {
+        const [rawSource, rawTarget] = line.trim().split(" ");
+        const source = parseInt(rawSource, 10);
+        const target = parseInt(rawTarget, 10);
+
+        if (isNaN(source) || isNaN(target)) return null;
+
+        const edgeId = `${Math.min(source, target)}-${Math.max(
+          source,
+          target
+        )}`;
+        return {
+          id: edgeId,
+          source: source.toString(),
+          target: target.toString(),
+        };
+      })
+      .filter((e): e is Edge => e !== null); // Type guard to filter out nulls
 
     return { nodes, edges };
   }
@@ -174,8 +296,26 @@ export default function App() {
           <textarea
             value={input}
             disabled={loading || animating}
-            onChange={(e) => setInput(e.target.value)}
-            style={{ minHeight: "120px", height: "fit-content" }}
+            onChange={(e) => {
+              isManualEditRef.current = true;
+
+              // Allow only numbers, spaces, and newlines
+              const numericOnly = e.target.value.replace(/[^\d\s\n]/g, "");
+
+              setInput(numericOnly);
+            }}
+            style={{
+              width: "100%",
+              maxWidth: "100%",
+              boxSizing: "border-box",
+              overflowX: "auto",
+              minHeight: "200px",
+            }}
+            placeholder="Enter graph in the following format (only accepts numbers): 
+N E
+0 1
+1 2
+..."
           />
         </div>
         <div style={{ marginTop: "10px", marginBottom: "10px" }}>
@@ -202,6 +342,17 @@ export default function App() {
             Pick a file to upload
           </label>
         </div>
+        <button
+          onClick={handleAddNode}
+          disabled={loading || animating}
+          className="cool-button"
+          style={{
+            cursor: loading || animating ? "not-allowed" : "pointer",
+            opacity: loading || animating ? 0.6 : 1,
+          }}
+        >
+          + Add Node
+        </button>
 
         <div
           style={{
@@ -210,20 +361,6 @@ export default function App() {
             marginTop: "15px",
           }}
         >
-          <button
-            onClick={() => {
-              fetchOutput();
-            }}
-            disabled={loading || animating}
-            className="cool-button"
-            style={{
-              cursor: loading || animating ? "not-allowed" : "pointer",
-              opacity: loading || animating ? 0.6 : 1,
-            }}
-          >
-            Solve
-          </button>
-
           <button
             onClick={() => {
               setInput("");
@@ -239,18 +376,44 @@ export default function App() {
               }
             }}
             style={{
-              cursor: loading || animating ? "not-allowed" : "pointer",
-              opacity: loading || animating ? 0.6 : 1,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
             }}
             className="cool-button"
           >
             Clear
           </button>
+          <button
+            onClick={() => {
+              fetchOutput();
+            }}
+            disabled={loading || animating || !isInputValidEdgeCount(input)}
+            className="cool-button"
+            style={{
+              cursor: loading || animating ? "not-allowed" : "pointer",
+              opacity: loading || animating ? 0.6 : 1,
+            }}
+          >
+            Solve
+          </button>
         </div>
         <p>{output}</p>
+        {!isInputValidEdgeCount(input) && input.length != 0 && (
+          <p style={{ color: "orange", fontWeight: "bold" }}>
+            ⚠️ Incorrect format. If you are not sure how to format your input,
+            please refer to the guide.
+          </p>
+        )}
       </div>
       <div style={{ width: "100%", height: "100vh" }}>
-        <Graph nodes={nodes} edges={edges} loading={loading} />
+        <Graph
+          nodes={nodes}
+          edges={edges}
+          loading={loading}
+          animating={animating}
+          onEdgeAdded={handleEdgeAdded}
+          onNodesUpdated={handleNodesUpdated}
+        />
       </div>
       {loading && (
         <div
@@ -289,6 +452,28 @@ export default function App() {
           </style>
         </div>
       )}
+      <button
+        onClick={() => setShowGuide(true)}
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          zIndex: 1000,
+          padding: "10px 16px",
+          background: "#4b0082",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          fontWeight: "bold",
+          cursor: "pointer",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+        }}
+        className="cool-button"
+      >
+        ❓ Guide
+      </button>
+
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
     </div>
   );
 }
