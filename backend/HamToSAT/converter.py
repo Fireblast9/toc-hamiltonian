@@ -13,8 +13,7 @@ import random
 import re
 import shutil
 import sys
-# To check how long the execution took
-import time
+import time # To check how long the execution took
 from io import StringIO  # To treat a string like a file
 from subprocess import PIPE, Popen
 
@@ -94,21 +93,9 @@ def genVarNames(**kwargs):
 def genClauses(**kwargs):
     clauses = []
 
-    ##+ Insert here the code to add constraints in the form of clauses
-    # example:
-    # count = kwargs['count']
-    # ## exactly one of our variables must be true:
-    # clauses.append([getVarNumber(idx=i) for i in closed_range(1, count)])
-    # for i in closed_range(1, count):
-    #     for j in closed_range(i+1, count):
-    #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
-    ##+ End of code insertion
-
-    vertices = kwargs[
-        'vertices']  # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
-    edges = kwargs[
-        'edges']  # list of edges. !!!Asuming they are tuples of vertex IDs!!!
-    positions = vertices  # number of positions in the path
+    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
+    positions = vertices # list of positions in the path
 
     # define the neighbors matrix
     # neighbors[i][j] = True if there is an edge between vertex i and j
@@ -264,6 +251,8 @@ def getGraphData(input_graph_string):
     """ Helper function to read the input graph from a string """
     graph_as_file = StringIO(input_graph_string) # treat the string as a file
     first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
+    n_vertices = int(first_line[0]) # number of vertices
+    n_edges = int(first_line[1]) # number of edges
 
     vertices = []
     edges = []
@@ -282,6 +271,11 @@ def getGraphData(input_graph_string):
 #------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
 def HamSAT(input_graph_string):
     """ Main function to run the SAT solver """
+
+    global gVarNumberToName, gVarNameToNumber
+    gVarNumberToName = ["invalid"]
+    gVarNameToNumber = {}
+
     path = shutil.which(SATsolver.split()[0])
     if path is None:
         if SATsolver == defSATsolver:

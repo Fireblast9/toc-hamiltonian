@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 
 ## Default executable of a SAT solver (do not change this)
-defSATsolver="z3"
+defSATsolver = "z3"
 
 ## Change this to an executable SAT solver if z3 is not in your PATH or else
 ## Example (Linux): SATsolver="/home/user/z3-4.13/bin/z3"
 ## You can also include command-line options if necessary
-SATsolver=defSATsolver
+SATsolver = defSATsolver
 
-import sys
-from subprocess import Popen
-from subprocess import PIPE
-import re
-import random
 import os
+import random
+import re
 import shutil
-from io import StringIO # To treat a string like a file
+import sys
 import time # To check how long the execution took
-
-gVarNumberToName = ["invalid"]
-gVarNameToNumber = {}
+from io import StringIO  # To treat a string like a file
+from subprocess import PIPE, Popen
 
 def closed_range(start, stop, step=1):
     dir = 1 if (step > 0) else -1
@@ -70,7 +66,6 @@ def genVarNames(**kwargs):
 
 def genClauses(**kwargs):
     clauses = []
-    ##+ Insert here the code to add constraints in the form of clauses
 
     vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
     edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
@@ -209,10 +204,13 @@ def getGraphData(input_graph_string):
     """ Helper function to read the input graph from a string """
     graph_as_file = StringIO(input_graph_string) # treat the string as a file
     first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
+    n_vertices = int(first_line[0]) # first line contains the number of vertices
+    n_edges = int(first_line[1]) # second line contains the number of edges
+
 
     vertices = []
     edges = []
-    for i in range (n_vertices):
+    for i in range(n_vertices):
         # First vertex is '0'
         vertices.append(i)
 
@@ -222,11 +220,16 @@ def getGraphData(input_graph_string):
         v2 = int(line[1])
         edges.append((v1,v2))
 
-    return vertices, edges
+    return vertices, edges, n_vertices, n_edges
 
 #------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
 def HamSAT(input_graph_string):
     """ Main function to run the SAT solver """
+
+    global gVarNumberToName, gVarNameToNumber
+    gVarNumberToName = ["invalid"]
+    gVarNameToNumber = {}
+
     path = shutil.which(SATsolver.split()[0])
     if path is None:
         if SATsolver == defSATsolver:
@@ -238,9 +241,7 @@ def HamSAT(input_graph_string):
     kwargs = {}
 
     # read the input graph
-    vertices, edges = getGraphData(input_graph_string)
-    n_vertices = len(vertices)
-    n_edges = len(edges)
+    vertices, edges, n_vertices, n_edges = getGraphData(input_graph_string)
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
