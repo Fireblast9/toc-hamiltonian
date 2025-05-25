@@ -101,9 +101,19 @@ def genClauses(**kwargs):
                 if v1 != v2:
                     clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
 
-                    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions  
-                    if not neighbors[v1][v2] and p < len(positions) - 1:
-                        clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+                    # # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions  
+                    # if not neighbors[v1][v2] and p < len(positions) - 1:
+                    #     clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
+    
+    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
+    for p in range(len(positions) - 1):
+        for v1 in vertices:
+            for v2 in vertices:
+                if v1 != v2 and not neighbors[v1][v2]:
+                    clauses.append([
+                        -getVarNumber(vertex=v1, position=p),
+                        -getVarNumber(vertex=v2, position=p + 1)
+                    ])
 
     return clauses
 
