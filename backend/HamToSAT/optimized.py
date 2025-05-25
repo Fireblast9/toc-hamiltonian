@@ -17,30 +17,24 @@ import time # To check how long the execution took
 from io import StringIO  # To treat a string like a file
 from subprocess import PIPE, Popen
 
-
 def closed_range(start, stop, step=1):
     dir = 1 if (step > 0) else -1
     return range(start, stop + dir, step)
-
 
 def varCount():
     global gVarNumberToName
     return len(gVarNumberToName) - 1
 
-
 def allVarNumbers():
     return closed_range(1, varCount())
-
 
 def varNumberToName(num):
     global gVarNumberToName
     return gVarNumberToName[num]
 
-
 def varNameToNumber(name):
     global gVarNameToNumber
     return gVarNameToNumber[name]
-
 
 def addVarName(name):
     global gVarNumberToName
@@ -48,47 +42,27 @@ def addVarName(name):
     gVarNumberToName.append(name)
     gVarNameToNumber[name] = varCount()
 
-
 # def printClause(clause):
 #     print(map(lambda x: "%s%s" % (x < 0 and eval("'-'") or eval ("''"), varNumberToName(abs(x))) , clause))
-
 
 def getVarNumber(**kwargs):
     return varNameToNumber(getVarName(**kwargs))
 
-
 def getVarName(**kwargs):
-    ##+ Insert here the code to define a variable name based on your application-specific parameters
 
     v = kwargs['vertex']
     p = kwargs['position']
 
-    return "x_%s_%s" % (
-        str(v), str(p)
-    )  # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
-
-    # example:
-    # idx = kwargs['idx']
-    # return "myVar(%d)" % (idx)
-
+    return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
 def genVarNames(**kwargs):
-    ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
-    vertices = kwargs[
-        'vertices']  # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
+    vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
 
     for v in vertices:
         for posision_index in range(len(vertices)):
             name = getVarName(vertex=v, position=posision_index)
             addVarName(name)
-
-    # example:
-    # count = kwargs['count']
-    # for i in closed_range(1, count):
-    #     name = getVarName(idx=i)
-    #     addVarName(name)
-
 
 def genClauses(**kwargs):
     clauses = []
@@ -103,50 +77,35 @@ def genClauses(**kwargs):
     for i in range(len(vertices)):
         for j in range(len(vertices)):
             #neighbors[i][j] = False
-            if (i, j) in edges:
+            if (i,j) in edges:
                 neighbors[i][j] = True
                 neighbors[j][i] = True
 
-    # 1. Every vertex must be in at least one position in the path
     for v in vertices:
+        # 1. Every vertex must be in at least one position in the path
         clauses.append([getVarNumber(vertex=v, position=p) for p in positions])
 
-    # 2. Every position in the path must have at least one vertex
+        # 4. Every vertex must be in at most one position in the path
+        for p1 in positions:
+            for p2 in range(p1 + 1, len(positions)): # start from p1 + 1 to avoid duplicates (-p1 or -p2 equal_to -p2 or -p1)
+                if p1 != p2:
+                    clauses.append([-getVarNumber(vertex=v, position=p1), -getVarNumber(vertex=v, position=p2)])
+
     for p in positions:
+        # 2. Every position in the path must have at least one vertex
         clauses.append([getVarNumber(vertex=v, position=p) for v in vertices])
 
-    # 3. Every position in the path must have at most one vertex
-    for p in positions:
+        # 3. Every position in the path must have at most one vertex
         for v1 in vertices:
-            for v2 in vertices:
+            for v2 in range(v1 + 1, len(vertices)): # start from v1 + 1 to avoid duplicates (-v1 or -v2 equal_to -v2 or -v1)
                 if v1 != v2:
-                    clauses.append([
-                        -getVarNumber(vertex=v1, position=p),
-                        -getVarNumber(vertex=v2, position=p)
-                    ])
+                    clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p)])
 
-    # 4. Every vertex must be in at most one position in the path
-    for v in vertices:
-        for p1 in positions:
-            for p2 in positions:
-                if p1 != p2:
-                    clauses.append([
-                        -getVarNumber(vertex=v, position=p1),
-                        -getVarNumber(vertex=v, position=p2)
-                    ])
-
-    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions
-    for p in range(len(positions) - 1):
-        for v1 in vertices:
-            for v2 in vertices:
-                if v1 != v2 and not neighbors[v1][v2]:
-                    clauses.append([
-                        -getVarNumber(vertex=v1, position=p),
-                        -getVarNumber(vertex=v2, position=p + 1)
-                    ])
+                    # 5. for each two consecutive positions in the path, there must be an edge between the vertices in those positions  
+                    if not neighbors[v1][v2] and p < len(positions) - 1:
+                        clauses.append([-getVarNumber(vertex=v1, position=p), -getVarNumber(vertex=v2, position=p+1)])
 
     return clauses
-
 
 ## A helper function to print the cnf header (do not modify)
 def getDimacsHeader(clauses):
@@ -159,19 +118,15 @@ def getDimacsHeader(clauses):
     for cl in clauses:
         print("c ", end='')
         for l in cl:
-            print(("!" if (l < 0) else " ") + varNumberToName(abs(l)),
-                  "",
-                  end='')
+            print(("!" if (l < 0) else " ") + varNumberToName(abs(l)), "", end='')
         print("")
     print("")
     str += "p cnf %d %d" % (cnt, n)
     return str
 
-
 ## A helper function to print a set of clauses in CNF (do not modify)
 def toDimacsCnf(clauses):
     return "\n".join(map(lambda x: "%s 0" % " ".join(map(str, x)), clauses))
-
 
 ## A helper function to print only the satisfied variables in human-readable format (do not modify)
 def printResult(res):
@@ -190,14 +145,12 @@ def printResult(res):
     # The last element in asgn is the trailing zero and we can ignore it
 
     # Convert the solution to our names
-    facts = map(lambda x: varNumberToName(abs(x)),
-                filter(lambda x: x > 0, asgn))
+    facts = map(lambda x: varNumberToName(abs(x)), filter(lambda x: x > 0, asgn))
 
     # Print the solution
     print("c SOLUTION:")
     for f in facts:
         print("c", f)
-
 
 def getHamPath(res, n_vertices):
     res = res.strip().split('\n')
@@ -251,12 +204,13 @@ def getGraphData(input_graph_string):
     """ Helper function to read the input graph from a string """
     graph_as_file = StringIO(input_graph_string) # treat the string as a file
     first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
-    n_vertices = int(first_line[0]) # number of vertices
-    n_edges = int(first_line[1]) # number of edges
+    n_vertices = int(first_line[0]) # first line contains the number of vertices
+    n_edges = int(first_line[1]) # second line contains the number of edges
+
 
     vertices = []
     edges = []
-    for i in range (n_vertices):
+    for i in range(n_vertices):
         # First vertex is '0'
         vertices.append(i)
 
@@ -266,7 +220,7 @@ def getGraphData(input_graph_string):
         v2 = int(line[1])
         edges.append((v1,v2))
 
-    return vertices, edges
+    return vertices, edges, n_vertices, n_edges
 
 #------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
 def HamSAT(input_graph_string):
@@ -287,9 +241,7 @@ def HamSAT(input_graph_string):
     kwargs = {}
 
     # read the input graph
-    vertices, edges = getGraphData(input_graph_string)
-    n_vertices = len(vertices)
-    n_edges = len(edges)
+    vertices, edges, n_vertices, n_edges = getGraphData(input_graph_string)
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
