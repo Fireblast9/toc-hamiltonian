@@ -212,7 +212,7 @@ def printResult(res):
         print("c", f)
 
 
-def printHamPath(res, n_vertices):
+def getHamPath(res, n_vertices):
     res = res.strip().split('\n')
 
     # If it was satisfiable, we want to have the assignment printed out
@@ -222,8 +222,6 @@ def printHamPath(res, n_vertices):
     # Read the solution
     asgn = map(int, res[1].split()[1:])
     # Then get the variables that are positive, and get their names.
-    # This way we know that everything not printed is false.
-    # The last element in asgn is the trailing zero and we can ignore it
 
     # get the variable number of the true variables and convert to 0-based index
     variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
@@ -241,7 +239,7 @@ def printHamPath(res, n_vertices):
 
     # Iterate over the variable numbers and assign them to the path
     for var in variable_number:
-        counter += 1  # count the number of true variables
+        counter += 1 # count the number of true variables
         v_idx = var // n_vertices
         p_idx = var % n_vertices
         if path[p_idx] == default_value:
@@ -249,16 +247,12 @@ def printHamPath(res, n_vertices):
             path[p_idx] = v_idx
         else:
             # If the position is already assigned, something went wrong
-            print(
-                "Error: multiple vertices assigned to the same position in the path."
-            )
+            print("Error: multiple vertices assigned to the same position in the path.")
             return
 
     # check that the number of true variables is equal to the number of vertices
     if counter != n_vertices:
-        print(
-            "Error: number of true variables is not equal to the number of vertices."
-        )
+        print("Error: number of true variables is not equal to the number of vertices.")
         return
 
     # Print the Hamiltonian Path
@@ -266,36 +260,14 @@ def printHamPath(res, n_vertices):
     print(path)
     return path
 
-
-#-------------------------This function is almost the same as main() but it returns the Hamiltonian path for backend------------------
-def HamSAT(input_graph_string):
-
-    global gVarNumberToName, gVarNameToNumber
-    gVarNumberToName = ["invalid"]
-    gVarNameToNumber = {}
-    """ Main function to run the SAT solver """
-    path = shutil.which(SATsolver.split()[0])
-    if path is None:
-        if SATsolver == defSATsolver:
-            print(
-                "Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)"
-                % sys.argv[0])
-        else:
-            print("Path '%s' does not exist or is not executable." % SATsolver)
-        sys.exit(1)
-
-    kwargs = {}
-
-    # read the input graph
-    graph_as_file = StringIO(input_graph_string)  # treat the string as a file
-    first_line = graph_as_file.readline().strip().split(
-    )  # strip() removes whiteline characters and end of line at the beginning and end of the string
-    n_vertices = int(first_line[0])
-    n_edges = int(first_line[1])
+def getGraphData(input_graph_string):
+    """ Helper function to read the input graph from a string """
+    graph_as_file = StringIO(input_graph_string) # treat the string as a file
+    first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
 
     vertices = []
     edges = []
-    for i in range(n_vertices):
+    for i in range (n_vertices):
         # First vertex is '0'
         vertices.append(i)
 
@@ -303,39 +275,33 @@ def HamSAT(input_graph_string):
         line = graph_as_file.readline().strip().split()
         v1 = int(line[0])
         v2 = int(line[1])
-        edges.append((v1, v2))
+        edges.append((v1,v2))
+
+    return vertices, edges
+
+#------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
+def HamSAT(input_graph_string):
+    """ Main function to run the SAT solver """
+    path = shutil.which(SATsolver.split()[0])
+    if path is None:
+        if SATsolver == defSATsolver:
+            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
+        else:
+            print("Path '%s' does not exist or is not executable." % SATsolver)
+        sys.exit(1)
+
+    kwargs = {}
+
+    # read the input graph
+    vertices, edges = getGraphData(input_graph_string)
+    n_vertices = len(vertices)
+    n_edges = len(edges)
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
+    start = time.time() # Start recording the time
 
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
-    # if len(sys.argv) != 2:
-    #     print("Usage: %s <count>" % sys.argv[0])
-    #     sys.exit(1)
-    # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-    ##+ End of code insertion
-    ##+ End of code insertion
-    # Start recording the time
-    start = time.time()
     genVarNames(**kwargs)
     clauses = genClauses(**kwargs)
 
@@ -351,118 +317,34 @@ def HamSAT(input_graph_string):
     # Use with linux
     #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     # Use with windows
-    solverOutput = Popen([SATsolver, "tmp_prob.cnf"],
-                         stdout=PIPE).communicate()[0]
+    solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
 
     res = solverOutput.decode('utf-8')
-    end = time.time()
-    total_time = end - start
+    end = time.time() # End recording the time
+    total_time = end - start # Calculate the total time taken
 
-    # printResult(res)
-    # print(f"Number of vertices: {n_vertices}")
-    # print(f"Number of edges: {n_edges}")
-    # print(f"Edges: {edges}")
-
-    hamiltonian_path = [-1 for _ in range(n_vertices)]
-    hamiltonian_path = printHamPath(res, n_vertices)
+    hamiltonian_path = [-1 for _ in range(n_vertices)] # Initialize the Hamiltonian path with -1
+    hamiltonian_path = getHamPath(res, n_vertices) # Get the Hamiltonian path from the result
 
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    
+    # Remove the temporary file
+    if os.path.exists("tmp_prob.cnf"):
+        os.remove("tmp_prob.cnf")
 
     return hamiltonian_path
+#---------------------------------------------------------------------------------------------------------------------------------------
 
 
-#-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
 
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
 
-    # replace this with the input you want to test
-    # example_input = "4 3\n0 1\n1 2\n2 3"
-    example_input = "5 4\n0 1\n1 2\n2 3\n3 4"
+    if len(sys.argv) != 2:
+        print("no input given, using default input file\n")
 
-    HamSAT(example_input)
+    input_file = sys.argv[1] if len(sys.argv) > 1 else 'graphs/cyclegraph.txt'
 
-    # path = shutil.which(SATsolver.split()[0])
-    # if path is None:
-    #     if SATsolver == defSATsolver:
-    #         print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
-    #     else:
-    #         print("Path '%s' does not exist or is not executable." % SATsolver)
-    #     sys.exit(1)
-
-    # kwargs = {}
-
-    # with open('graph5.txt', 'r') as file:
-    #     # strip() removes whiteline characters and end of line at the beginning and end of the string
-    #     first_line = file.readline().strip().split()
-    #     n_vertices = int(first_line[0])
-    #     n_edges = int(first_line[1])
-
-    #     vertices = []
-    #     edges = []
-    #     for i in range (n_vertices):
-    #         # First vertex is '0'
-    #         vertices.append(i)
-
-    #     for _ in range(n_edges):
-    #         line = file.readline().strip().split()
-    #         v1 = int(line[0])
-    #         v2 = int(line[1])
-    #         edges.append((v1,v2))
-
-    # kwargs['vertices'] = vertices
-    # kwargs['edges'] = edges
-
-    # #unsatisfiable:
-    # #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    # #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
-
-    # #satisfiable:
-    # # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-    # ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # # example:
-    # # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    # #
-
-    # # if len(sys.argv) != 2:
-    # #     print("Usage: %s <count>" % sys.argv[0])
-    # #     sys.exit(1)
-    # # kwargs['count'] = int(sys.argv[1])
-    # # if len(sys.argv) == 1:
-    # #     print(
-    # #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    # #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    # #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    # #         + " (vertex 3, vertex 1)")
-    # #     sys.exit(1)
-    #     ##+ End of code insertion
-    # ##+ End of code insertion
-    # # Start recording the time
-    # start = time.time()
-    # genVarNames(**kwargs)
-    # clauses = genClauses(**kwargs)
-
-    # head = getDimacsHeader(clauses)
-    # cnf = toDimacsCnf(clauses)
-
-    # # Here we create a temporary cnf file for SATsolver
-    # fl = open("tmp_prob.cnf", "w")
-    # fl.write("\n".join([head, cnf]) + "\n")
-    # fl.close()
-
-    # # Run the SATsolver
-    # # Use with linux
-    # #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
-    # # Use with windows
-    # solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
-    # res = solverOutput.decode('utf-8')
-    # end = time.time()
-    # total_time = end - start
-    # printResult(res)
-    # print(f"Number of vertices: {n_vertices}")
-    # print(f"Number of edges: {n_edges}")
-    # print(f"Edges: {edges}")
-    # printHamPath(res, n_vertices)
-    # print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    with open(input_file, 'r') as file:
+        file_content = file.read()
+    HamSAT(file_content)

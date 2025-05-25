@@ -16,8 +16,7 @@ import random
 import os
 import shutil
 from io import StringIO # To treat a string like a file
-# To check how long the execution took
-import time
+import time # To check how long the execution took
 
 gVarNumberToName = ["invalid"]
 gVarNameToNumber = {}
@@ -54,7 +53,6 @@ def getVarNumber(**kwargs):
     return varNameToNumber(getVarName(**kwargs))
 
 def getVarName(**kwargs):
-    ##+ Insert here the code to define a variable name based on your application-specific parameters
 
     v = kwargs['vertex']
     p = kwargs['position']
@@ -62,7 +60,6 @@ def getVarName(**kwargs):
     return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
 def genVarNames(**kwargs):
-    ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
     vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
 
@@ -160,7 +157,7 @@ def printResult(res):
     for f in facts:
         print("c", f)
 
-def printHamPath(res, n_vertices):
+def getHamPath(res, n_vertices):
     res = res.strip().split('\n')
 
     # If it was satisfiable, we want to have the assignment printed out
@@ -170,8 +167,6 @@ def printHamPath(res, n_vertices):
     # Read the solution
     asgn = map(int, res[1].split()[1:])
     # Then get the variables that are positive, and get their names.
-    # This way we know that everything not printed is false.
-    # The last element in asgn is the trailing zero and we can ignore it
 
     # get the variable number of the true variables and convert to 0-based index
     variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
@@ -210,24 +205,10 @@ def printHamPath(res, n_vertices):
     print(path)
     return path
 
-#-------------------------This function is almost the same as main() but it returns the Hamiltonian path for backend------------------
-def HamSAT(input_graph_string):
-    """ Main function to run the SAT solver """
-    path = shutil.which(SATsolver.split()[0])
-    if path is None:
-        if SATsolver == defSATsolver:
-            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
-        else:
-            print("Path '%s' does not exist or is not executable." % SATsolver)
-        sys.exit(1)
-
-    kwargs = {}
-
-    # read the input graph
+def getGraphData(input_graph_string):
+    """ Helper function to read the input graph from a string """
     graph_as_file = StringIO(input_graph_string) # treat the string as a file
     first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
-    n_vertices = int(first_line[0])
-    n_edges = int(first_line[1])
 
     vertices = []
     edges = []
@@ -241,12 +222,31 @@ def HamSAT(input_graph_string):
         v2 = int(line[1])
         edges.append((v1,v2))
 
+    return vertices, edges
+
+#------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
+def HamSAT(input_graph_string):
+    """ Main function to run the SAT solver """
+    path = shutil.which(SATsolver.split()[0])
+    if path is None:
+        if SATsolver == defSATsolver:
+            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
+        else:
+            print("Path '%s' does not exist or is not executable." % SATsolver)
+        sys.exit(1)
+
+    kwargs = {}
+
+    # read the input graph
+    vertices, edges = getGraphData(input_graph_string)
+    n_vertices = len(vertices)
+    n_edges = len(edges)
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
-    # Start recording the time
-    start = time.time()
+    start = time.time() # Start recording the time
+
     genVarNames(**kwargs)
     clauses = genClauses(**kwargs)
 
@@ -265,29 +265,31 @@ def HamSAT(input_graph_string):
     solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
 
     res = solverOutput.decode('utf-8')
-    end = time.time()
-    total_time = end - start
+    end = time.time() # End recording the time
+    total_time = end - start # Calculate the total time taken
 
-    # printResult(res)
-    # print(f"Number of vertices: {n_vertices}")
-    # print(f"Number of edges: {n_edges}")
-    # print(f"Edges: {edges}")
-
-    hamiltonian_path = [-1 for _ in range(n_vertices)]
-    hamiltonian_path = printHamPath(res, n_vertices)
+    hamiltonian_path = [-1 for _ in range(n_vertices)] # Initialize the Hamiltonian path with -1
+    hamiltonian_path = getHamPath(res, n_vertices) # Get the Hamiltonian path from the result
 
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
     
+    # Remove the temporary file
+    if os.path.exists("tmp_prob.cnf"):
+        os.remove("tmp_prob.cnf")
+
     return hamiltonian_path
-#-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------------
 
 
 
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
 
-    # example_input = "4 5\n0 1\n1 2\n2 3\n3 0\n0 2\n"
+    if len(sys.argv) != 2:
+        print("no input given, using default input file\n")
+
     input_file = sys.argv[1] if len(sys.argv) > 1 else 'graphs/cyclegraph.txt'
+
     with open(input_file, 'r') as file:
         file_content = file.read()
     HamSAT(file_content)
