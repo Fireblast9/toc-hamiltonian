@@ -14,10 +14,20 @@ export default function App() {
   const isClearedRef = useRef(false);
   const isManualEditRef = useRef(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [speed, setSpeed] = useState(750);
+  const speedRef = useRef(speed);
+  const [shouldFitView, setShouldFitView] = useState(false);
+  const [graphVersion, setGraphVersion] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+
+  useEffect(() => {
+    setOutput("");
+
     if (!input.trim()) {
       setNodes([]);
       setEdges([]);
@@ -30,7 +40,7 @@ export default function App() {
     );
     setNodes(parsedNodes);
     setEdges(parsedEdges);
-  }, [input]);
+  }, [input, graphVersion]);
 
   function isInputValidEdgeCount(input: string): boolean {
     const lines = input.trim().split("\n");
@@ -60,6 +70,7 @@ export default function App() {
       ...lines.slice(1),
     ].join("\n");
     setInput(newInput);
+    setShouldFitView(true);
   }
 
   function handleEdgeAdded(source: string, target: string) {
@@ -112,7 +123,7 @@ export default function App() {
 
     try {
       response = await fetch(
-        `http://localhost:8000/solve/${encodeURIComponent(input)}`
+        `http://192.168.178.89:8000/solve/${encodeURIComponent(input)}`
       );
     } catch {
       setOutput(
@@ -161,7 +172,7 @@ export default function App() {
       const source = res[i].toString();
       const target = res[i + 1].toString();
 
-      await new Promise((resolve) => setTimeout(resolve, 200)); // wait 0.2 second
+      await new Promise((resolve) => setTimeout(resolve, speedRef.current));
 
       setEdges((prev) =>
         prev.map((edge) => {
@@ -207,9 +218,38 @@ export default function App() {
         setEdges([]);
         isManualEditRef.current = false;
         setInput(content);
+        setGraphVersion((v) => v + 1);
       }
     };
     reader.readAsText(file);
+  }
+
+  function handleEdgesDelete(deletedEdges: Edge[]) {
+    const lines = input.trim().split("\n");
+    if (lines.length === 0) return;
+
+    const [nodeCountStr] = lines[0].split(" ");
+    const edgeLines = lines.slice(1);
+
+    const deletedSet = new Set(
+      deletedEdges.map(
+        ({ source, target }) =>
+          `${Math.min(+source, +target)} ${Math.max(+source, +target)}`
+      )
+    );
+
+    const remainingEdges = edgeLines.filter((line) => {
+      const [a, b] = line.trim().split(" ");
+      const normalized = `${Math.min(+a, +b)} ${Math.max(+a, +b)}`;
+      return !deletedSet.has(normalized);
+    });
+
+    const newEdgeCount = remainingEdges.length;
+    const newInput = [
+      `${nodeCountStr} ${newEdgeCount}`,
+      ...remainingEdges,
+    ].join("\n");
+    setInput(newInput);
   }
 
   function parseGraphInput(
@@ -270,7 +310,7 @@ export default function App() {
         style={{
           float: "left",
           width: "25%",
-          minWidth: "200px",
+          minWidth: "300px",
           position: "absolute",
           backgroundColor: "#4b0082", // Indigo
           zIndex: 1,
@@ -280,6 +320,7 @@ export default function App() {
           borderRadius: "10px",
           border: "1px solid #000",
           textAlign: "center",
+          fontSize: "24px",
         }}
       >
         <h3>Hamiltonian Path SAT Solver</h3>
@@ -310,6 +351,7 @@ export default function App() {
               boxSizing: "border-box",
               overflowX: "auto",
               minHeight: "200px",
+              fontSize: "20px",
             }}
             placeholder="Enter graph in the following format (only accepts numbers): 
 N E
@@ -333,6 +375,7 @@ N E
             htmlFor="fileInput"
             className="cool-button"
             style={{
+              fontSize: "24px",
               display: "inline-block",
               textAlign: "center",
               cursor: loading || animating ? "not-allowed" : "pointer",
@@ -383,6 +426,7 @@ N E
           >
             Clear
           </button>
+
           <button
             onClick={() => {
               fetchOutput();
@@ -390,8 +434,20 @@ N E
             disabled={loading || animating || !isInputValidEdgeCount(input)}
             className="cool-button"
             style={{
-              cursor: loading || animating ? "not-allowed" : "pointer",
-              opacity: loading || animating ? 0.6 : 1,
+              cursor:
+                loading ||
+                animating ||
+                input.length == 0 ||
+                !isInputValidEdgeCount(input)
+                  ? "not-allowed"
+                  : "pointer",
+              opacity:
+                loading ||
+                animating ||
+                input.length == 0 ||
+                !isInputValidEdgeCount(input)
+                  ? 0.6
+                  : 1,
             }}
           >
             Solve
@@ -404,6 +460,39 @@ N E
             please refer to the guide.
           </p>
         )}
+        <div
+          style={{
+            marginTop: "10px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          }}
+        >
+          <span
+            style={{ color: "white", fontWeight: "bold", marginBottom: "8px" }}
+          >
+            Animation speed
+          </span>
+          <input
+            type="range"
+            min="50"
+            max="1000"
+            step="50"
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            disabled={loading}
+            style={{
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
+          />
+          <span
+            style={{ color: "white", fontWeight: "bold", marginTop: "6px" }}
+          >
+            {speed} ms
+          </span>
+        </div>
       </div>
       <div style={{ width: "100%", height: "100vh" }}>
         <Graph
@@ -413,6 +502,8 @@ N E
           animating={animating}
           onEdgeAdded={handleEdgeAdded}
           onNodesUpdated={handleNodesUpdated}
+          shouldFitView={shouldFitView}
+          onEdgesDelete={handleEdgesDelete}
         />
       </div>
       {loading && (
@@ -464,8 +555,8 @@ N E
           color: "white",
           border: "none",
           borderRadius: "8px",
-          fontWeight: "bold",
           cursor: "pointer",
+
           boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
         }}
         className="cool-button"

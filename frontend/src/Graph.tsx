@@ -16,9 +16,24 @@ import "@xyflow/react/dist/style.css";
 import { edgeTypes } from "./edges";
 import { nodeTypes } from "./nodes";
 
+import { useReactFlow } from "@xyflow/react";
+
+function FitViewTrigger({ shouldFitView }: { shouldFitView: boolean }) {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (shouldFitView) {
+      fitView({ padding: 0.2 });
+    }
+  }, [shouldFitView, fitView]);
+
+  return null;
+}
+
 interface GraphProps {
   nodes: Node[];
   edges: Edge[];
+  shouldFitView?: boolean;
 }
 
 export default function Graph({
@@ -27,14 +42,18 @@ export default function Graph({
   loading,
   animating,
   onEdgeAdded,
+  onEdgesDelete,
   onNodesUpdated,
+  shouldFitView = true,
 }: GraphProps & {
   nodes: Node[];
   edges: Edge[];
   loading: boolean;
   animating: boolean;
   onEdgeAdded: (source: string, target: string) => void;
+  onEdgesDelete: (edges: Edge[]) => void;
   onNodesUpdated: (updatedNodes: Node[]) => void;
+  shouldFitView?: boolean;
 }) {
   const [graphNodes, setGraphNodes, onNodesChangeInternal] =
     useNodesState(nodes);
@@ -104,10 +123,14 @@ export default function Graph({
       zoomOnScroll={!loading}
       panOnScroll={!loading}
       panOnDrag={!loading}
+      onEdgesDelete={onEdgesDelete}
+      deleteKeyCode={["Backspace", "Delete"]}
     >
       <Background />
       <MiniMap />
       <Controls />
+
+      <FitViewTrigger shouldFitView={shouldFitView} />
     </ReactFlow>
   );
 }
