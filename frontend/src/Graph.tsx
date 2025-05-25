@@ -1,15 +1,15 @@
 import type { Edge, Node, NodeChange } from "@xyflow/react";
 import {
+  addEdge,
   Background,
   Controls,
   MiniMap,
   ReactFlow,
-  addEdge,
   useEdgesState,
   useNodesState,
   type OnConnect,
 } from "@xyflow/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import "@xyflow/react/dist/style.css";
 
@@ -18,14 +18,23 @@ import { nodeTypes } from "./nodes";
 
 import { useReactFlow } from "@xyflow/react";
 
-function FitViewTrigger({ shouldFitView }: { shouldFitView: boolean }) {
+function FitViewTrigger({
+  shouldFitView,
+  onFitComplete,
+}: {
+  shouldFitView: boolean;
+  onFitComplete: () => void;
+}) {
   const { fitView } = useReactFlow();
+  const prevShouldFit = useRef(false);
 
   useEffect(() => {
-    if (shouldFitView) {
+    if (shouldFitView && !prevShouldFit.current) {
       fitView({ padding: 0.2 });
+      onFitComplete(); // Reset flag
     }
-  }, [shouldFitView, fitView]);
+    prevShouldFit.current = shouldFitView;
+  }, [shouldFitView, fitView, onFitComplete]);
 
   return null;
 }
@@ -45,6 +54,7 @@ export default function Graph({
   onEdgesDelete,
   onNodesUpdated,
   shouldFitView = true,
+  onFitComplete = () => {},
 }: GraphProps & {
   nodes: Node[];
   edges: Edge[];
@@ -54,6 +64,8 @@ export default function Graph({
   onEdgesDelete: (edges: Edge[]) => void;
   onNodesUpdated: (updatedNodes: Node[]) => void;
   shouldFitView?: boolean;
+  onFitComplete?: () => void;
+  onNodesDelete?: () => void;
 }) {
   const [graphNodes, setGraphNodes, onNodesChangeInternal] =
     useNodesState(nodes);
@@ -61,8 +73,10 @@ export default function Graph({
 
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
-      onNodesChangeInternal(changes);
-      // After changes apply, call back with updated nodes
+      const filteredChanges = changes.filter(
+        (change) => change.type !== "remove"
+      );
+      onNodesChangeInternal(filteredChanges);
       setTimeout(() => onNodesUpdated(graphNodes), 0);
     },
     [onNodesChangeInternal, graphNodes, onNodesUpdated]
@@ -125,12 +139,16 @@ export default function Graph({
       panOnDrag={!loading}
       onEdgesDelete={onEdgesDelete}
       deleteKeyCode={["Backspace", "Delete"]}
+      onNodesDelete={() => {}}
     >
       <Background />
       <MiniMap />
       <Controls />
 
-      <FitViewTrigger shouldFitView={shouldFitView} />
+      <FitViewTrigger
+        shouldFitView={shouldFitView}
+        onFitComplete={onFitComplete}
+      />
     </ReactFlow>
   );
 }

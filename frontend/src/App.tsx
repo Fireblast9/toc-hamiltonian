@@ -57,20 +57,20 @@ export default function App() {
   function handleAddNode() {
     if (!input.trim()) {
       setInput("1 0");
-      return;
+    } else {
+      const lines = input.trim().split("\n");
+      const [nodeCountStr, edgeCountStr] = lines[0].split(" ");
+      const newNodeCount = parseInt(nodeCountStr, 10) + 1;
+
+      const newInput = [
+        `${newNodeCount} ${edgeCountStr}`,
+        ...lines.slice(1),
+      ].join("\n");
+      setInput(newInput);
     }
 
-    const lines = input.trim().split("\n");
-    const [nodeCountStr, edgeCountStr] = lines[0].split(" ");
-    const newNodeCount = parseInt(nodeCountStr, 10) + 1;
-
-    // Replace only the first line with updated node count
-    const newInput = [
-      `${newNodeCount} ${edgeCountStr}`,
-      ...lines.slice(1),
-    ].join("\n");
-    setInput(newInput);
-    setShouldFitView(true);
+    setShouldFitView(false); // reset
+    setTimeout(() => setShouldFitView(true), 0); // re-trigger fit
   }
 
   function handleEdgeAdded(source: string, target: string) {
@@ -112,7 +112,33 @@ export default function App() {
   }
 
   function handleNodesUpdated(updatedNodes: Node[]) {
-    setNodes(updatedNodes); // Persist positions
+    // If a node was deleted, update the input node count and remove related edges
+    const deletedNodeIds = new Set(
+      nodes
+        .map((n) => n.id)
+        .filter((id) => !updatedNodes.some((n) => n.id === id))
+    );
+
+    if (deletedNodeIds.size > 0) {
+      const lines = input.trim().split("\n");
+      if (lines.length === 0) return;
+
+      const edgeLines = lines.slice(1);
+
+      const newEdges = edgeLines.filter((line) => {
+        const [a, b] = line.trim().split(" ");
+        return !(deletedNodeIds.has(a) || deletedNodeIds.has(b));
+      });
+
+      const newInput = [
+        `${updatedNodes.length} ${newEdges.length}`,
+        ...newEdges,
+      ].join("\n");
+
+      setInput(newInput);
+    }
+
+    setNodes(updatedNodes); // Update node state
   }
 
   // fetch the output from the server
@@ -222,6 +248,27 @@ export default function App() {
       }
     };
     reader.readAsText(file);
+  }
+
+  function handleDeleteLastNode() {
+    if (nodes.length === 0) return;
+
+    const lastNodeId = (nodes.length - 1).toString();
+
+    // Remove edges connected to the last node
+    const remainingEdges = edges.filter(
+      (e) => e.source !== lastNodeId && e.target !== lastNodeId
+    );
+
+    const updatedInputLines = [
+      `${nodes.length - 1} ${remainingEdges.length}`,
+      ...remainingEdges.map((e) => `${e.source} ${e.target}`),
+    ];
+
+    setInput(updatedInputLines.join("\n"));
+
+    // Trigger re-parsing by changing graphVersion
+    setGraphVersion((v) => v + 1);
   }
 
   function handleEdgesDelete(deletedEdges: Edge[]) {
@@ -385,18 +432,40 @@ N E
             Pick a file to upload
           </label>
         </div>
-        <button
-          onClick={handleAddNode}
-          disabled={loading || animating}
-          className="cool-button"
+        <div
           style={{
-            cursor: loading || animating ? "not-allowed" : "pointer",
-            opacity: loading || animating ? 0.6 : 1,
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: "15px",
           }}
         >
-          + Add Node
-        </button>
-
+          <button
+            onClick={handleDeleteLastNode}
+            disabled={loading || animating || nodes.length === 0}
+            className="cool-button"
+            style={{
+              cursor:
+                loading || animating || nodes.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+              opacity: loading || animating || nodes.length === 0 ? 0.6 : 1,
+              marginTop: "8px",
+            }}
+          >
+            − Delete Last Node
+          </button>
+          <button
+            onClick={handleAddNode}
+            disabled={loading || animating}
+            className="cool-button"
+            style={{
+              cursor: loading || animating ? "not-allowed" : "pointer",
+              opacity: loading || animating ? 0.6 : 1,
+            }}
+          >
+            + Add Node
+          </button>
+        </div>
         <div
           style={{
             display: "flex",
@@ -504,6 +573,7 @@ N E
           onNodesUpdated={handleNodesUpdated}
           shouldFitView={shouldFitView}
           onEdgesDelete={handleEdgesDelete}
+          onFitComplete={() => setShouldFitView(false)}
         />
       </div>
       {loading && (

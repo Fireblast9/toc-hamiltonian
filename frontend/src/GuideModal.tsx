@@ -112,6 +112,19 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
           </li>
           <li>You must connect all parts of the graph to make it solvable.</li>
         </ul>
+        <h3>🛠️ Editing the Graph</h3>
+        <ul>
+          <li>
+            <strong>Delete an edge:</strong> Click on the edge to select it,
+            then press <kbd>Delete</kbd> or <kbd>Backspace</kbd>.
+          </li>
+          <li>
+            <strong>Delete a node:</strong> Use the <em>“Delete Last Node”</em>{" "}
+            button. This will remove the last node and all of its connected
+            edges.
+          </li>
+        </ul>
+
         <hr style={{ marginTop: "30px", marginBottom: "10px" }} />
         <p style={{ fontSize: "0.85rem", color: "#555", textAlign: "center" }}>
           Built by{" "}
