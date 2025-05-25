@@ -1,2 +1,5 @@
 env
 __pycache__/
+venv/
+backend/tmp_prob.cnf
+backend/HamToSAT/tmp_prob.cnf
