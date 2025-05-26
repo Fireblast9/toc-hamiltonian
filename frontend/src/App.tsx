@@ -149,7 +149,7 @@ export default function App() {
 
     try {
       response = await fetch(
-        `http://localhost:8000/solve/${encodeURIComponent(input)}`
+        `http://192.168.178.89:8000/solve/${encodeURIComponent(input)}`
       );
     } catch {
       setOutput(
