@@ -266,7 +266,7 @@ def getGraphData(input_graph_string):
         v2 = int(line[1])
         edges.append((v1,v2))
 
-    return vertices, edges
+    return vertices, edges, n_vertices, n_edges
 
 #------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
 def HamSAT(input_graph_string):
@@ -287,9 +287,12 @@ def HamSAT(input_graph_string):
     kwargs = {}
 
     # read the input graph
-    vertices, edges = getGraphData(input_graph_string)
-    n_vertices = len(vertices)
-    n_edges = len(edges)
+    vertices, edges, n_vertices, n_edges = getGraphData(input_graph_string)
+
+    #check for edge cases
+    if n_edges == 0:
+        print("c No edges in the graph, no Hamiltonian path exists.")
+        return [-1 for _ in range(n_vertices)]
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges

@@ -253,6 +253,11 @@ def HamSAT(input_graph_string):
     # read the input graph
     vertices, edges, n_vertices, n_edges = getGraphData(input_graph_string)
 
+    # check for edge cases
+    if n_edges == 0:
+        print("c No edges in the graph, no Hamiltonian path exists.")
+        return [-1 for _ in range(n_vertices)]
+
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
