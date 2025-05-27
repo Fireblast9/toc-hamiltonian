@@ -276,6 +276,8 @@ def HamSAT(input_graph_string):
     end = time.time() # End recording the time
     total_time = end - start # Calculate the total time taken
 
+    printResult(res) # Print the SAT result in human-readable format
+
     hamiltonian_path = [-1 for _ in range(n_vertices)] # Initialize the Hamiltonian path with -1
     hamiltonian_path = getHamPath(res, n_vertices) # Get the Hamiltonian path from the result
 
@@ -285,8 +287,6 @@ def HamSAT(input_graph_string):
     if os.path.exists("tmp_prob.cnf"):
         os.remove("tmp_prob.cnf")
 
-    printResult(res) # Print the SAT result in human-readable format
-    
     return hamiltonian_path
 #---------------------------------------------------------------------------------------------------------------------------------------
 
