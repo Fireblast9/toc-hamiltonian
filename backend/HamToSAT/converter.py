@@ -58,7 +58,6 @@ def getVarNumber(**kwargs):
 
 
 def getVarName(**kwargs):
-    ##+ Insert here the code to define a variable name based on your application-specific parameters
 
     v = kwargs['vertex']
     p = kwargs['position']
@@ -67,13 +66,9 @@ def getVarName(**kwargs):
         str(v), str(p)
     )  # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
-    # example:
-    # idx = kwargs['idx']
-    # return "myVar(%d)" % (idx)
 
 
 def genVarNames(**kwargs):
-    ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
     vertices = kwargs[
         'vertices']  # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
@@ -82,12 +77,6 @@ def genVarNames(**kwargs):
         for posision_index in range(len(vertices)):
             name = getVarName(vertex=v, position=posision_index)
             addVarName(name)
-
-    # example:
-    # count = kwargs['count']
-    # for i in closed_range(1, count):
-    #     name = getVarName(idx=i)
-    #     addVarName(name)
 
 
 def genClauses(**kwargs):
