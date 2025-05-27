@@ -173,11 +173,6 @@ def getHamPath(res, n_vertices):
     # get the variable number of the true variables and convert to 0-based index
     variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
 
-    # check that the number of true variables is equal to the number of vertices
-    # if len(variable_number) != n_vertices:
-    #     print("Error: number of true variables is not equal to the number of vertices.")
-    #     return
-
     # Initialize a list to store the path
     default_value = -1
     path = [default_value for _ in range(n_vertices)]
@@ -290,6 +285,8 @@ def HamSAT(input_graph_string):
     if os.path.exists("tmp_prob.cnf"):
         os.remove("tmp_prob.cnf")
 
+    printResult(res) # Print the SAT result in human-readable format
+    
     return hamiltonian_path
 #---------------------------------------------------------------------------------------------------------------------------------------
 
