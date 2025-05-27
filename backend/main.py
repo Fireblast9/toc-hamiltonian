@@ -25,5 +25,4 @@ async def read_root():
 
 @app.get("/solve/{path}")
 async def read_item(path: str):
-    print(path)
     return HamSAT(path)

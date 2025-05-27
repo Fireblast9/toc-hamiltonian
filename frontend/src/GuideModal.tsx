@@ -124,8 +124,6 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
             edges.
           </li>
         </ul>
-
-        <hr style={{ marginTop: "30px", marginBottom: "10px" }} />
         <p style={{ fontSize: "0.85rem", color: "#555", textAlign: "center" }}>
           Built by{" "}
           <strong>

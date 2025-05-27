@@ -149,7 +149,7 @@ export default function App() {
 
     try {
       response = await fetch(
-        `http://192.168.178.89:8000/solve/${encodeURIComponent(input)}`
+        `http://localhost:8000/solve/${encodeURIComponent(input)}`
       );
     } catch {
       setOutput(
@@ -167,7 +167,7 @@ export default function App() {
 
     const res = await response.json(); // Expected: [4, 3, 2, 1, 0]
     if (!Array.isArray(res) || res.length === 0) {
-      setOutput("Not solvable");
+      setOutput("Graph doesn't have an Hamiltonian Path");
       setLoading(false);
       return;
     }
@@ -187,9 +187,8 @@ export default function App() {
 
     // Animate edge by edge
     for (let i = 0; i < res.length - 1; i++) {
-      console.log("Animating edge:", res[i], res[i + 1], isClearedRef);
       if (isClearedRef.current) {
-        console.log("Stopping...");
+        //Stopping the animation if the input was cleared
 
         setAnimating(false);
         setLoading(false);
@@ -304,7 +303,6 @@ export default function App() {
     existingNodes: Node[] = []
   ): { nodes: Node[]; edges: Edge[] } {
     const lines = input.trim().split("\n");
-    console.log(lines);
 
     if (lines.length === 0) return { nodes: [], edges: [] };
 
