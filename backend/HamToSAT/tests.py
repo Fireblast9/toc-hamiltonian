@@ -11,7 +11,7 @@ import numpy as np
 OPTIMISED_MODULE_NAME = "optimized"
 CONVERTER_MODULE_NAME = "converter"
 OUTPUT_LATEX_FILE = "stress_test_results.tex"
-DEFAULT_TIMEOUT_SECONDS = 10  # Timeout for each HamSAT call on a single graph
+DEFAULT_TIMEOUT_SECONDS = 6  # Timeout for each HamSAT call on a single graph
 
 def plot_time_comparison(results):
     graph_names = [res['name'] for res in results]
