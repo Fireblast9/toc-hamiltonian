@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 
 ## Default executable of a SAT solver (do not change this)
-defSATsolver="z3"
+defSATsolver = "z3"
 
 ## Change this to an executable SAT solver if z3 is not in your PATH or else
 ## Example (Linux): SATsolver="/home/user/z3-4.13/bin/z3"
 ## You can also include command-line options if necessary
-SATsolver=defSATsolver
+SATsolver = defSATsolver
 
-import sys
-from subprocess import Popen
-from subprocess import PIPE
-import re
-import random
 import os
+import random
+import re
 import shutil
-# To check how long the execution took
-import time
-
-gVarNumberToName = ["invalid"]
-gVarNameToNumber = {}
+import sys
+import time # To check how long the execution took
+from io import StringIO  # To treat a string like a file
+from subprocess import PIPE, Popen
 
 def closed_range(start, stop, step=1):
     dir = 1 if (step > 0) else -1
@@ -53,19 +49,13 @@ def getVarNumber(**kwargs):
     return varNameToNumber(getVarName(**kwargs))
 
 def getVarName(**kwargs):
-    ##+ Insert here the code to define a variable name based on your application-specific parameters
 
     v = kwargs['vertex']
     p = kwargs['position']
 
     return "x_%s_%s" % (str(v), str(p)) # Use of strings for vertex IDs in case they are not just numbers. DISCUSS!!
 
-    # example:
-    # idx = kwargs['idx']
-    # return "myVar(%d)" % (idx)
-
 def genVarNames(**kwargs):
-    ##+ Insert here the code to generate the variable names
     # variables X_{v,p} for each vertex v and position p of Hamiltonian path
     vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
 
@@ -74,28 +64,13 @@ def genVarNames(**kwargs):
             name = getVarName(vertex=v, position=posision_index)
             addVarName(name)
 
-    # example:
-    # count = kwargs['count']
-    # for i in closed_range(1, count):
-    #     name = getVarName(idx=i)
-    #     addVarName(name)
-
 def genClauses(**kwargs):
     clauses = []
 
-    ##+ Insert here the code to add constraints in the form of clauses
-    # example:
-    # count = kwargs['count']
-    # ## exactly one of our variables must be true:
-    # clauses.append([getVarNumber(idx=i) for i in closed_range(1, count)])
-    # for i in closed_range(1, count):
-    #     for j in closed_range(i+1, count):
-    #         clauses.append([-getVarNumber(idx=i), -getVarNumber(idx=j)])
-    ##+ End of code insertion
 
     vertices = kwargs['vertices'] # list of veritices. !!!Asuming they are numbered from 0 to n-1!!!
     edges = kwargs['edges'] # list of edges. !!!Asuming they are tuples of vertex IDs!!!
-    positions = vertices # number of positions in the path
+    positions = vertices # list of positions in the path
 
     # define the neighbors matrix
     # neighbors[i][j] = True if there is an edge between vertex i and j
@@ -177,7 +152,8 @@ def printResult(res):
     for f in facts:
         print("c", f)
 
-def printHamPath(res, n_vertices):
+def getHamPath(res, n_vertices):
+    """decodes the result from the SAT solver and returns the Hamiltonian path if it exists"""
     res = res.strip().split('\n')
 
     # If it was satisfiable, we want to have the assignment printed out
@@ -187,8 +163,6 @@ def printHamPath(res, n_vertices):
     # Read the solution
     asgn = map(int, res[1].split()[1:])
     # Then get the variables that are positive, and get their names.
-    # This way we know that everything not printed is false.
-    # The last element in asgn is the trailing zero and we can ignore it
 
     # get the variable number of the true variables and convert to 0-based index
     variable_number = map(lambda x: abs(x) - 1, filter(lambda x: x > 0, asgn))
@@ -227,9 +201,36 @@ def printHamPath(res, n_vertices):
     print(path)
     return path
 
-#-------------------------This function is almost the same as main() but it returns the Hamiltonian path for backend------------------
-def HamSAT():
+def getGraphData(input_graph_string):
+    """ Helper function to read the input graph from a string """
+    graph_as_file = StringIO(input_graph_string) # treat the string as a file
+    first_line = graph_as_file.readline().strip().split()# strip() removes whiteline characters and end of line at the beginning and end of the string
+    n_vertices = int(first_line[0]) # first line contains the number of vertices
+    n_edges = int(first_line[1]) # second line contains the number of edges
+
+
+    vertices = []
+    edges = []
+    for i in range(n_vertices):
+        # First vertex is '0'
+        vertices.append(i)
+
+    for _ in range(n_edges):
+        line = graph_as_file.readline().strip().split()
+        v1 = int(line[0])
+        v2 = int(line[1])
+        edges.append((v1,v2))
+
+    return vertices, edges, n_vertices, n_edges
+
+#------------------------------------This function runs the SAT solver for the given graph-----------------------------------------------
+def HamSAT(input_graph_string):
     """ Main function to run the SAT solver """
+
+    global gVarNumberToName, gVarNameToNumber
+    gVarNumberToName = ["invalid"]
+    gVarNameToNumber = {}
+
     path = shutil.which(SATsolver.split()[0])
     if path is None:
         if SATsolver == defSATsolver:
@@ -240,58 +241,19 @@ def HamSAT():
 
     kwargs = {}
 
-    with open('graph5.txt', 'r') as file:
-        # strip() removes whiteline characters and end of line at the beginning and end of the string
-        first_line = file.readline().strip().split()
-        n_vertices = int(first_line[0])
-        n_edges = int(first_line[1])
+    # read the input graph
+    vertices, edges, n_vertices, n_edges = getGraphData(input_graph_string)
 
-        vertices = []
-        edges = []
-        for i in range (n_vertices):
-            # First vertex is '0'
-            vertices.append(i)
-
-        for _ in range(n_edges):
-            line = file.readline().strip().split()
-            v1 = int(line[0])
-            v2 = int(line[1])
-            edges.append((v1,v2))
-
+    # check for edge cases
+    if n_edges == 0:
+        print("c No edges in the graph, no Hamiltonian path exists.")
+        return [-1 for _ in range(n_vertices)]
 
     kwargs['vertices'] = vertices
     kwargs['edges'] = edges
 
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
+    start = time.time() # Start recording the time
 
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
-
-    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
-    # if len(sys.argv) != 2:
-    #     print("Usage: %s <count>" % sys.argv[0])
-    #     sys.exit(1)
-    # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-        ##+ End of code insertion
-    ##+ End of code insertion
-    # Start recording the time
-    start = time.time()
     genVarNames(**kwargs)
     clauses = genClauses(**kwargs)
 
@@ -308,105 +270,33 @@ def HamSAT():
     #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
     # Use with windows
     solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
+
     res = solverOutput.decode('utf-8')
-    end = time.time()
-    total_time = end - start
-    printResult(res)
-    print(f"Number of vertices: {n_vertices}")
-    print(f"Number of edges: {n_edges}")
-    print(f"Edges: {edges}")
-    hamiltonian_path = [-1 for _ in range(n_vertices)]
-    hamiltonian_path = printHamPath(res, n_vertices)
+    end = time.time() # End recording the time
+    total_time = end - start # Calculate the total time taken
+
+    hamiltonian_path = [-1 for _ in range(n_vertices)] # Initialize the Hamiltonian path with -1
+    hamiltonian_path = getHamPath(res, n_vertices) # Get the Hamiltonian path from the result
+
     print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    
+    # Remove the temporary file
+    if os.path.exists("tmp_prob.cnf"):
+        os.remove("tmp_prob.cnf")
+
     return hamiltonian_path
-#-------------------------End of the function that returns the Hamiltonian path for backend-----------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 ## This function is invoked when the python script is run directly and not imported
 if __name__ == '__main__':
-    path = shutil.which(SATsolver.split()[0])
-    if path is None:
-        if SATsolver == defSATsolver:
-            print("Set the path to a SAT solver via SATsolver variable on line 9 of this file (%s)" % sys.argv[0])
-        else:
-            print("Path '%s' does not exist or is not executable." % SATsolver)
-        sys.exit(1)
 
-    kwargs = {}
+    if len(sys.argv) != 2:
+        print("no input given, using default input file\n")
 
-    with open('graph5.txt', 'r') as file:
-        # strip() removes whiteline characters and end of line at the beginning and end of the string
-        first_line = file.readline().strip().split()
-        n_vertices = int(first_line[0])
-        n_edges = int(first_line[1])
+    input_file = sys.argv[1] if len(sys.argv) > 1 else 'graphs/cyclegraph.txt'
 
-        vertices = []
-        edges = []
-        for i in range (n_vertices):
-            # First vertex is '0'
-            vertices.append(i)
-
-        for _ in range(n_edges):
-            line = file.readline().strip().split()
-            v1 = int(line[0])
-            v2 = int(line[1])
-            edges.append((v1,v2))
-
-
-    kwargs['vertices'] = vertices
-    kwargs['edges'] = edges
-
-    #unsatisfiable:
-    #kwargs['vertices'] = [0, 1, 2, 3] # Example vertices.
-    #kwargs['edges'] = [(0, 1), (1, 2), (1, 3)] # Example edges.
-
-    #satisfiable:
-    # kwargs['vertices'] = [0, 1, 2] # Example vertices.
-    # kwargs['edges'] = [(0, 1), (1, 2)] # Example edges.
-
-
-
-    ##+ Insert here the code to read the arguments of your application and fill them into 'kwargs'
-    # example:
-    # Example input: number_of_vertices number_of_edges v1|v3 v3|v1
-    #
-
-    # if len(sys.argv) != 2:
-    #     print("Usage: %s <count>" % sys.argv[0])
-    #     sys.exit(1)
-    # kwargs['count'] = int(sys.argv[1])
-    # if len(sys.argv) == 1:
-    #     print(
-    #         "Please enter a graph using the following format: <number of vertices> <number of edges> <list of edges>\n"
-    #         "where an edge is a pair <vertex_n|vertex_m> representing an edge between vertex number n and vertex number m.\n"
-    #         + "Example of a valid input:\n3 2 1|2 3|1\nwhich is a graph with 3 vertices, and 2 edges (vertex 1, vertex 3) and"
-    #         + " (vertex 3, vertex 1)")
-    #     sys.exit(1)
-        ##+ End of code insertion
-    ##+ End of code insertion
-    # Start recording the time
-    start = time.time()
-    genVarNames(**kwargs)
-    clauses = genClauses(**kwargs)
-
-    head = getDimacsHeader(clauses)
-    cnf = toDimacsCnf(clauses)
-
-    # Here we create a temporary cnf file for SATsolver
-    fl = open("tmp_prob.cnf", "w")
-    fl.write("\n".join([head, cnf]) + "\n")
-    fl.close()
-
-    # Run the SATsolver
-    # Use with linux
-    #solverOutput = Popen([SATsolver + " tmp_prob.cnf"], stdout=PIPE, shell=True).communicate()[0]
-    # Use with windows
-    solverOutput = Popen([SATsolver, "tmp_prob.cnf"], stdout=PIPE).communicate()[0]
-    res = solverOutput.decode('utf-8')
-    end = time.time()
-    total_time = end - start
-    printResult(res)
-    print(f"Number of vertices: {n_vertices}")
-    print(f"Number of edges: {n_edges}")
-    print(f"Edges: {edges}")
-    printHamPath(res, n_vertices)
-    print(f"It took {total_time:.4f} seconds to run the SAT solver.")
+    with open(input_file, 'r') as file:
+        file_content = file.read()
+    HamSAT(file_content)

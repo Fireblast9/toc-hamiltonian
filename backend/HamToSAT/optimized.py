@@ -163,6 +163,7 @@ def printResult(res):
         print("c", f)
 
 def getHamPath(res, n_vertices):
+    """decodes the result from the SAT solver and returns the Hamiltonian path if it exists"""
     res = res.strip().split('\n')
 
     # If it was satisfiable, we want to have the assignment printed out
