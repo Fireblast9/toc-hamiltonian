@@ -148,9 +148,7 @@ export default function App() {
     let response: Response;
 
     try {
-      response = await fetch(
-        `http://localhost:8000/solve/${encodeURIComponent(input)}`
-      );
+      response = await fetch(`/api/solve/${encodeURIComponent(input)}`);
     } catch {
       setOutput(
         "There was an error connecting to the server. Please ensure the server is running."
@@ -166,7 +164,7 @@ export default function App() {
     }
 
     const res = await response.json(); // Expected: [4, 3, 2, 1, 0]
-    if (!Array.isArray(res) || res.length === 0) {
+    if (!Array.isArray(res) || res.length === 0 || res[0] == "-1") {
       setOutput("Graph doesn't have an Hamiltonian Path");
       setLoading(false);
       return;
